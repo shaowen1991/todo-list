@@ -8,19 +8,19 @@ function App() {
   // TODO: remove this
   useEffect(() => {
     fetch(`${API_URL}/test`)
-      .then(res => res.json())
-      .then(data => setTests(data));
+      .then((res) => res.json())
+      .then((data) => setTests(data));
   }, []);
 
   return (
     <>
       <h1 className="text-3xl font-bold underline">Todo</h1>
       {/* TODO remove this */}
-      {tests.map(test => (
+      {tests.map((test) => (
         <div key={test.id}>{test.name}</div>
       ))}
     </>
-  )
+  );
 }
 
 export default App;

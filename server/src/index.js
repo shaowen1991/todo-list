@@ -11,10 +11,10 @@ app.use(express.json());
 // TODO: remove this
 app.get('/test', async (req, res) => {
   try {
-      const { rows } = await pool.query('SELECT id, name FROM test ORDER BY created_at');
-      res.json(rows);
+    const { rows } = await pool.query('SELECT id, name FROM test ORDER BY created_at');
+    res.json(rows);
   } catch (err) {
-      res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 
