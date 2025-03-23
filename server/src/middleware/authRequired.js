@@ -8,7 +8,7 @@ import HttpStatus from '../constants/httpStatus.js';
  * @param {Function} next
  */
 function authRequired(req, res, next) {
-  if (!req.session.userId) {
+  if (!req?.session?.userId) {
     return res.status(HttpStatus.UNAUTHORIZED).json({ error: 'Unauthorized' });
   }
 
