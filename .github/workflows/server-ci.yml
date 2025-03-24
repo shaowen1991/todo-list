@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    name: Build and Test
+    name: Server Build and Test
     runs-on: ubuntu-latest
 
     defaults:
