@@ -1,4 +1,4 @@
-const HttpStatus = {
+const HttpStatus = Object.freeze({
   // 2xx success
   OK: 200,
   CREATED: 201,
@@ -28,6 +28,6 @@ const HttpStatus = {
   BAD_GATEWAY: 502,
   SERVICE_UNAVAILABLE: 503,
   GATEWAY_TIMEOUT: 504,
-};
+});
 
 export default HttpStatus;
