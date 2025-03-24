@@ -63,6 +63,7 @@ const register = async (req, res) => {
       });
     });
   } catch (err) {
+    console.error('Error:', err);
     res
       .status(HttpStatus.INTERNAL_SERVER_ERROR)
       .json({ error: 'Server error' });
@@ -127,6 +128,7 @@ const login = async (req, res) => {
       });
     });
   } catch (err) {
+    console.error('Error:', err);
     res
       .status(HttpStatus.INTERNAL_SERVER_ERROR)
       .json({ error: 'Server error' });
