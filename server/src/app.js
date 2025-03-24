@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
 import authRoutes from './routes/auth.js';
+import todoListsRoutes from './routes/todo-lists.js';
 
 export function createApp() {
   const app = express();
@@ -29,7 +30,12 @@ export function createApp() {
     })
   );
 
+  app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok' });
+  });
+
   app.use('/api/auth', authRoutes);
+  app.use('/api/todo-lists', todoListsRoutes);
 
   return app;
 }

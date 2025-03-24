@@ -2,18 +2,6 @@ import bcrypt from 'bcryptjs';
 import db from '../db/index.js';
 import HttpStatus from '../constants/httpStatus.js';
 
-const AuthMsgs = {
-  MISSING_CREDENTIALS: 'Missing username or password',
-  USERNAME_EXISTS: 'Username already exists',
-  SERVER_ERROR: 'Server error',
-  INVALID_CREDENTIALS: 'Invalid username or password',
-  LOGOUT_FAILED: 'Logout failed',
-  NOT_LOGGED_IN: 'Not logged in',
-  REGISTRATION_SUCCESSFUL: 'Registration successful',
-  LOGIN_SUCCESSFUL: 'Login successful',
-  LOGOUT_SUCCESSFUL: 'Logged out successfully',
-};
-
 /**
  * Register a new user
  * POST /api/auth/register
@@ -28,7 +16,7 @@ const register = async (req, res) => {
   if (!username || !password) {
     return res
       .status(HttpStatus.BAD_REQUEST)
-      .json({ error: AuthMsgs.MISSING_CREDENTIALS });
+      .json({ error: 'Missing username or password' });
   }
 
   try {
@@ -41,7 +29,7 @@ const register = async (req, res) => {
     if (existingUser.rowCount > 0) {
       return res
         .status(HttpStatus.CONFLICT)
-        .json({ error: AuthMsgs.USERNAME_EXISTS });
+        .json({ error: 'Username already exists' });
     }
 
     // hash the password
@@ -60,14 +48,14 @@ const register = async (req, res) => {
       if (err) {
         return res
           .status(HttpStatus.INTERNAL_SERVER_ERROR)
-          .json({ error: AuthMsgs.SERVER_ERROR });
+          .json({ error: 'Server error' });
       }
 
       req.session.userId = newUser.id;
       req.session.username = newUser.username;
 
       res.status(HttpStatus.CREATED).json({
-        message: AuthMsgs.REGISTRATION_SUCCESSFUL,
+        message: 'Registration successful',
         user: {
           id: newUser.id,
           username: newUser.username,
@@ -77,7 +65,7 @@ const register = async (req, res) => {
   } catch (err) {
     res
       .status(HttpStatus.INTERNAL_SERVER_ERROR)
-      .json({ error: AuthMsgs.SERVER_ERROR });
+      .json({ error: 'Server error' });
   }
 };
 
@@ -95,7 +83,7 @@ const login = async (req, res) => {
   if (!username || !password) {
     return res
       .status(HttpStatus.BAD_REQUEST)
-      .json({ error: AuthMsgs.MISSING_CREDENTIALS });
+      .json({ error: 'Missing username or password' });
   }
 
   try {
@@ -108,7 +96,7 @@ const login = async (req, res) => {
     if (result.rowCount === 0) {
       return res
         .status(HttpStatus.UNAUTHORIZED)
-        .json({ error: AuthMsgs.INVALID_CREDENTIALS });
+        .json({ error: 'Invalid username or password' });
     }
 
     const user = result.rows[0];
@@ -119,7 +107,7 @@ const login = async (req, res) => {
     if (!match) {
       return res
         .status(HttpStatus.UNAUTHORIZED)
-        .json({ error: AuthMsgs.INVALID_CREDENTIALS });
+        .json({ error: 'Invalid username or password' });
     }
 
     // login successful, save user id and other info in session
@@ -127,21 +115,21 @@ const login = async (req, res) => {
       if (err) {
         return res
           .status(HttpStatus.INTERNAL_SERVER_ERROR)
-          .json({ error: AuthMsgs.SERVER_ERROR });
+          .json({ error: 'Server error' });
       }
 
       req.session.userId = user.id;
       req.session.username = username;
 
       res.status(HttpStatus.OK).json({
-        message: AuthMsgs.LOGIN_SUCCESSFUL,
+        message: 'Login successful',
         user: { id: user.id, username: username },
       });
     });
   } catch (err) {
     res
       .status(HttpStatus.INTERNAL_SERVER_ERROR)
-      .json({ error: AuthMsgs.SERVER_ERROR });
+      .json({ error: 'Server error' });
   }
 };
 
@@ -157,12 +145,12 @@ const logout = (req, res) => {
     if (err) {
       return res
         .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .json({ error: AuthMsgs.LOGOUT_FAILED });
+        .json({ error: 'Logout failed' });
     }
 
     // clear cookie
     res.clearCookie('connect.sid');
-    res.status(HttpStatus.OK).json({ message: AuthMsgs.LOGOUT_SUCCESSFUL });
+    res.status(HttpStatus.OK).json({ message: 'Logged out successfully' });
   });
 };
 
