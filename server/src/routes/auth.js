@@ -62,7 +62,6 @@ router.post('/register', async (req, res) => {
     // after successful registration, automatically create session to log in the user
     req.session.regenerate((err) => {
       if (err) {
-        console.error('session regenerate error:', err);
         return res
           .status(HttpStatus.INTERNAL_SERVER_ERROR)
           .json({ error: AuthMsgs.SERVER_ERROR });
@@ -80,7 +79,6 @@ router.post('/register', async (req, res) => {
       });
     });
   } catch (err) {
-    console.error('Error during registration:', err);
     res
       .status(HttpStatus.INTERNAL_SERVER_ERROR)
       .json({ error: AuthMsgs.SERVER_ERROR });
@@ -145,7 +143,6 @@ router.post('/login', async (req, res) => {
       });
     });
   } catch (err) {
-    console.error('Login error:', err);
     res
       .status(HttpStatus.INTERNAL_SERVER_ERROR)
       .json({ error: AuthMsgs.SERVER_ERROR });
