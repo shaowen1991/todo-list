@@ -75,6 +75,7 @@ const register = async (req, res) => {
       });
     });
   } catch (err) {
+    console.error('Error:', err);
     res
       .status(HttpStatus.INTERNAL_SERVER_ERROR)
       .json({ error: AuthMsgs.SERVER_ERROR });
@@ -139,6 +140,7 @@ const login = async (req, res) => {
       });
     });
   } catch (err) {
+    console.error('Error:', err);
     res
       .status(HttpStatus.INTERNAL_SERVER_ERROR)
       .json({ error: AuthMsgs.SERVER_ERROR });

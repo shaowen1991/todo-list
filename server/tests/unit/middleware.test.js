@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals';
+import { jest, describe, test, expect } from '@jest/globals';
 import authRequired from '../../src/middleware/authRequired.js';
 import HttpStatus from '../../src/constants/httpStatus.js';
 
