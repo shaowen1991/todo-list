@@ -25,7 +25,7 @@ export function createApp() {
       cookie: {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'none',
+        sameSite: 'lax', // good for both local and prod
       },
     })
   );

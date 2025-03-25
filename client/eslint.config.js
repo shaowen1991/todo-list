@@ -31,7 +31,12 @@ export default [
     rules: {
       'react/jsx-uses-react': 'error',
       'react/jsx-uses-vars': 'error',
-      'react/prop-types': 'error',
+      'react/prop-types': [
+        'error',
+        {
+          ignore: ['children'], // Only ignore the 'children' prop
+        },
+      ],
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
       'react-refresh/only-export-components': [
