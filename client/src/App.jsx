@@ -1,25 +1,29 @@
-import './App.css';
-import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import TodoLists from './pages/TodoLists';
 
 function App() {
-  const [tests, setTests] = useState([]);
-  const API_URL = import.meta.env.VITE_API_URL;
-
-  // TODO: remove this
-  useEffect(() => {
-    fetch(`${API_URL}/test`)
-      .then((res) => res.json())
-      .then((data) => setTests(data));
-  }, []);
-
   return (
-    <>
-      <h1 className="text-3xl font-bold underline">Todo</h1>
-      {/* TODO remove this */}
-      {tests.map((test) => (
-        <div key={test.id}>{test.name}</div>
-      ))}
-    </>
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route
+            path="/todo-lists"
+            element={
+              <ProtectedRoute>
+                <TodoLists />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/" element={<Navigate to="/todo-lists" replace />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 
