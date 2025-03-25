@@ -34,7 +34,7 @@ export default [
       'react/prop-types': [
         'error',
         {
-          ignore: ['children'], // Only ignore the 'children' prop
+          ignore: ['children'],
         },
       ],
       'react-hooks/rules-of-hooks': 'error',
