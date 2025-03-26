@@ -94,14 +94,28 @@ export default function TodoLists() {
   }, [listIdParam, user?.id, queryParams]);
 
   // handlers
-  const handleStatusSelect = (status) => {
+  const handleSelectOption = (type, optionKey) => {
     const updatedQueryParams = new URLSearchParams(queryParams);
+    let queryParamKey, setShowDropdown;
 
-    if (status) {
-      updatedQueryParams.set('status', status);
+    switch (type) {
+      case 'TODO_STATUS':
+        queryParamKey = 'status';
+        setShowDropdown = setShowStatusDropdown;
+        break;
+      case 'PRIORITY':
+        queryParamKey = 'priority';
+        setShowDropdown = setShowPriorityDropdown;
+        break;
+      default:
+        break;
+    }
+
+    if (optionKey) {
+      updatedQueryParams.set(queryParamKey, optionKey);
     } else {
-      // if status is null set by show all button, remove it from the query params
-      updatedQueryParams.delete('status');
+      // option key is null set by show all button, remove it from the query params
+      updatedQueryParams.delete(queryParamKey);
     }
 
     const queryParamsString = updatedQueryParams.toString()
@@ -112,28 +126,7 @@ export default function TodoLists() {
       replace: true,
     });
 
-    setShowStatusDropdown(false);
-  };
-
-  const handlePrioritySelect = (priority) => {
-    const updatedQueryParams = new URLSearchParams(queryParams);
-
-    if (priority) {
-      updatedQueryParams.set('priority', priority);
-    } else {
-      // if status is null set by show all button, remove it from the query params
-      updatedQueryParams.delete('priority');
-    }
-
-    const queryParamsString = updatedQueryParams.toString()
-      ? `?${updatedQueryParams.toString()}`
-      : '';
-
-    navigate(`/todo-lists/${listIdParam}${queryParamsString}`, {
-      replace: true,
-    });
-
-    setShowPriorityDropdown(false);
+    setShowDropdown(false);
   };
 
   const handleResetFilters = () => {
@@ -170,7 +163,8 @@ export default function TodoLists() {
     console.log('Share list');
   };
 
-  const handleUserOptions = (id) => {
+  const handleUserWithAccessOptions = (id) => {
+    // TODO: handle user with access options
     console.log('User options', id);
   };
 
@@ -226,8 +220,7 @@ export default function TodoLists() {
       label,
       selectedOption,
       showDropdown,
-      setShowDropdown,
-      handleSelectOption;
+      setShowDropdown;
 
     switch (type) {
       case 'TODO_STATUS':
@@ -237,7 +230,6 @@ export default function TodoLists() {
         selectedOption = selectedStatus;
         showDropdown = showStatusDropdown;
         setShowDropdown = setShowStatusDropdown;
-        handleSelectOption = handleStatusSelect;
         break;
       case 'PRIORITY':
         optionKeys = PRIORITY;
@@ -246,16 +238,9 @@ export default function TodoLists() {
         selectedOption = selectedPriority;
         showDropdown = showPriorityDropdown;
         setShowDropdown = setShowPriorityDropdown;
-        handleSelectOption = handlePrioritySelect;
         break;
       default:
-        optionKeys = TODO_STATUS;
-        styleConfig = STYLE_CONFIGS.TODO_STATUS;
-        label = 'Status';
-        selectedOption = selectedStatus;
-        showDropdown = showStatusDropdown;
-        setShowDropdown = setShowStatusDropdown;
-        handleSelectOption = handleStatusSelect;
+        break;
     }
 
     return (
@@ -287,7 +272,7 @@ export default function TodoLists() {
                 <button
                   key={optionKey}
                   className="mb-2 flex w-full cursor-pointer items-center rounded-md px-2 py-1 hover:bg-gray-100"
-                  onClick={() => handleSelectOption(optionKey)}
+                  onClick={() => handleSelectOption(type, optionKey)}
                 >
                   <span
                     className={clsx(
@@ -302,7 +287,7 @@ export default function TodoLists() {
               ))}
               <div className="mt-1 border-t border-gray-100 pt-2">
                 <button
-                  onClick={() => handleSelectOption(null)}
+                  onClick={() => handleSelectOption(type, null)}
                   className="flex w-full cursor-pointer items-center rounded-md px-2 py-1 hover:bg-gray-100"
                 >
                   <span className="inline-flex rounded-md px-2.5 py-0.5 text-xs font-semibold text-gray-600">
@@ -485,7 +470,7 @@ export default function TodoLists() {
                 <UserCard
                   key={user.user_id}
                   user={user}
-                  onOptions={handleUserOptions}
+                  onOptions={handleUserWithAccessOptions}
                 />
               ))}
             </div>
