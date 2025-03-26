@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import clsx from 'clsx';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -24,7 +25,7 @@ export default function Login() {
       <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow">
         <div className="text-center">
           <h1 className="text-3xl font-bold">Log In</h1>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-2 text-gray-700">
             Sign in to your todo list account
           </p>
         </div>
@@ -50,7 +51,10 @@ export default function Login() {
               required
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none"
+              className={clsx(
+                'mt-1 block h-10 w-full rounded-md border border-gray-300',
+                'px-3 py-2 focus:border-blue-500 focus:ring-blue-500 focus:outline-none'
+              )}
             />
           </div>
 
@@ -68,14 +72,22 @@ export default function Login() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none"
+              className={clsx(
+                'mt-1 block h-10 w-full rounded-md border border-gray-300',
+                'px-3 py-2 focus:border-blue-500 focus:ring-blue-500 focus:outline-none'
+              )}
             />
           </div>
 
-          <div>
+          <div className="mt-8">
             <button
               type="submit"
-              className="flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
+              className={clsx(
+                'flex h-10 w-full items-center justify-center rounded-md',
+                'border border-transparent bg-blue-100 px-4 text-sm font-medium',
+                'text-blue-800 hover:bg-blue-200 focus:ring-2 focus:ring-blue-500',
+                'focus:ring-offset-2 focus:outline-none'
+              )}
             >
               Log In
             </button>
@@ -83,11 +95,11 @@ export default function Login() {
         </form>
 
         <div className="text-center text-sm">
-          <p className="text-gray-600">
+          <p className="text-gray-700">
             Don't have an account?{' '}
             <Link
               to="/signup"
-              className="font-medium text-indigo-600 hover:text-indigo-500"
+              className="font-medium text-blue-800 hover:text-blue-600"
             >
               Sign up
             </Link>
