@@ -12,7 +12,14 @@ import UserCard from '../components/UserCard';
 import Navbar from '../components/Navbar';
 import api from '../utils/api';
 import clsx from 'clsx';
-import { TODO_STATUS, PRIORITY } from '../constants/enums';
+import {
+  FILTER_PARAM_KEYS,
+  FILTER_TYPES,
+  PRIORITY,
+  SORT_BY_PARAMS,
+  SORT_BY_TYPES,
+  TODO_STATUS,
+} from '../constants/enums';
 import { STYLE_CONFIGS } from '../constants/displays';
 
 export default function TodoLists() {
@@ -29,8 +36,9 @@ export default function TodoLists() {
   const [todos, setTodos] = useState([]);
   const [usersWithAccess, setUsersWithAccess] = useState([]);
   const [accessRequests, setAccessRequests] = useState([]);
-  const selectedStatus = queryParams.get('status');
-  const selectedPriority = queryParams.get('priority');
+  const selectedStatus = queryParams.get(FILTER_PARAM_KEYS.TODO_STATUS);
+  const selectedPriority = queryParams.get(FILTER_PARAM_KEYS.PRIORITY);
+  const selectedSortBy = queryParams.get('sortBy');
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
 
@@ -94,17 +102,17 @@ export default function TodoLists() {
   }, [listIdParam, user?.id, queryParams]);
 
   // handlers
-  const handleSelectOption = (type, optionKey) => {
+  const handleSelectOption = (filterType, optionKey) => {
     const updatedQueryParams = new URLSearchParams(queryParams);
     let queryParamKey, setShowDropdown;
 
-    switch (type) {
-      case 'TODO_STATUS':
-        queryParamKey = 'status';
+    switch (filterType) {
+      case FILTER_TYPES.TODO_STATUS:
+        queryParamKey = FILTER_PARAM_KEYS.TODO_STATUS;
         setShowDropdown = setShowStatusDropdown;
         break;
-      case 'PRIORITY':
-        queryParamKey = 'priority';
+      case FILTER_TYPES.PRIORITY:
+        queryParamKey = FILTER_PARAM_KEYS.PRIORITY;
         setShowDropdown = setShowPriorityDropdown;
         break;
       default:
@@ -133,6 +141,25 @@ export default function TodoLists() {
     navigate(`/todo-lists/${listIdParam}`, { replace: true });
     setShowPriorityDropdown(false);
     setShowStatusDropdown(false);
+  };
+
+  const handleSelectSort = (sortType) => {
+    const updatedQueryParams = new URLSearchParams(queryParams);
+    const queryParam = SORT_BY_PARAMS[sortType];
+
+    if (selectedSortBy !== queryParam) {
+      updatedQueryParams.set('sortBy', queryParam);
+    } else {
+      updatedQueryParams.delete('sortBy');
+    }
+
+    const queryParamsString = updatedQueryParams.toString()
+      ? `?${updatedQueryParams.toString()}`
+      : '';
+
+    navigate(`/todo-lists/${listIdParam}${queryParamsString}`, {
+      replace: true,
+    });
   };
 
   const handleAddList = () => {
@@ -214,7 +241,7 @@ export default function TodoLists() {
     );
   };
 
-  const renderFilterDropdown = (type) => {
+  const renderFilterDropdown = (filterType) => {
     let optionKeys,
       styleConfig,
       label,
@@ -222,8 +249,8 @@ export default function TodoLists() {
       showDropdown,
       setShowDropdown;
 
-    switch (type) {
-      case 'TODO_STATUS':
+    switch (filterType) {
+      case FILTER_TYPES.TODO_STATUS:
         optionKeys = TODO_STATUS;
         styleConfig = STYLE_CONFIGS.TODO_STATUS;
         label = 'Status';
@@ -231,7 +258,7 @@ export default function TodoLists() {
         showDropdown = showStatusDropdown;
         setShowDropdown = setShowStatusDropdown;
         break;
-      case 'PRIORITY':
+      case FILTER_TYPES.PRIORITY:
         optionKeys = PRIORITY;
         styleConfig = STYLE_CONFIGS.PRIORITY;
         label = 'Priority';
@@ -272,7 +299,7 @@ export default function TodoLists() {
                 <button
                   key={optionKey}
                   className="mb-2 flex w-full cursor-pointer items-center rounded-md px-2 py-1 hover:bg-gray-100"
-                  onClick={() => handleSelectOption(type, optionKey)}
+                  onClick={() => handleSelectOption(filterType, optionKey)}
                 >
                   <span
                     className={clsx(
@@ -287,7 +314,7 @@ export default function TodoLists() {
               ))}
               <div className="mt-1 border-t border-gray-100 pt-2">
                 <button
-                  onClick={() => handleSelectOption(type, null)}
+                  onClick={() => handleSelectOption(filterType, null)}
                   className="flex w-full cursor-pointer items-center rounded-md px-2 py-1 hover:bg-gray-100"
                 >
                   <span className="inline-flex rounded-md px-2.5 py-0.5 text-xs font-semibold text-gray-600">
@@ -352,12 +379,21 @@ export default function TodoLists() {
     );
   };
 
-  const renderGridHeaderCell = (text = '', options = { canSort: false }) => {
+  const renderGridHeaderCell = (text = '', sortType) => {
     return (
-      <div className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+      <div
+        className={clsx(
+          'px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase select-none',
+          sortType && 'cursor-pointer hover:text-gray-700',
+          SORT_BY_PARAMS[sortType] === selectedSortBy && '!text-blue-800'
+        )}
+        onClick={() => {
+          if (sortType) handleSelectSort(sortType);
+        }}
+      >
         <span className="flex items-center whitespace-nowrap">
           {text}
-          {options.canSort && <ChevronUpDownIcon className="ml-1 h-4 w-4" />}
+          {sortType && <ChevronUpDownIcon className={clsx('ml-1 h-4 w-4')} />}
         </span>
       </div>
     );
@@ -372,7 +408,7 @@ export default function TodoLists() {
       );
     }
 
-    const gridTemplateColumns = '15% 35% 10% 10% 10% 10% 10%';
+    const gridTemplateColumns = '15% 35% 12% 10% 10% 10% 8%';
 
     return (
       <div className="overflow-x-auto">
@@ -385,12 +421,12 @@ export default function TodoLists() {
             )}
             style={{ gridTemplateColumns }}
           >
-            {renderGridHeaderCell('Title', { canSort: true })}
+            {renderGridHeaderCell('Title', SORT_BY_TYPES.TITLE)}
             {renderGridHeaderCell('Description')}
-            {renderGridHeaderCell('Due Date', { canSort: true })}
-            {renderGridHeaderCell('Status', { canSort: true })}
-            {renderGridHeaderCell('Priority', { canSort: true })}
-            {renderGridHeaderCell('Created At')}
+            {renderGridHeaderCell('Due Date', SORT_BY_TYPES.DUE_DATE)}
+            {renderGridHeaderCell('Status', SORT_BY_TYPES.TODO_STATUS)}
+            {renderGridHeaderCell('Priority', SORT_BY_TYPES.PRIORITY)}
+            {renderGridHeaderCell('Created At', SORT_BY_TYPES.CREATED_AT)}
             {renderGridHeaderCell('')}
           </div>
 
