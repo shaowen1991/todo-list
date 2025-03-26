@@ -106,7 +106,7 @@ const getListTodos = async (req, res) => {
 
     // build the query with filters
     const baseQuery = `
-      SELECT t.id, t.title, t.description, t.due_date, t.status, t.priority
+      SELECT t.id, t.title, t.description, t.due_date, t.status, t.priority, t.created_at
       FROM todos t
       JOIN todo_lists tl ON t.list_id = tl.id
       WHERE t.list_id = $1

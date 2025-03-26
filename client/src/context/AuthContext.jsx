@@ -5,7 +5,7 @@ import {
   useContext,
   useCallback,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../utils/api';
 
 const AuthContext = createContext();
@@ -14,6 +14,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const checkAuth = useCallback(async () => {
     if (user) {
@@ -34,12 +35,19 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     checkAuth().then((isAuthed) => {
-      if (isAuthed) {
+      // only redirect to /todo-lists if user is authenticated
+      // and currently on the root path or auth pages
+      const isAuthPage =
+        location.pathname === '/login' ||
+        location.pathname === '/signup' ||
+        location.pathname === '/';
+
+      if (isAuthed && isAuthPage) {
         navigate('/todo-lists', { replace: true });
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checkAuth]);
+  }, [checkAuth, location.pathname]);
 
   const login = async (username, password) => {
     try {

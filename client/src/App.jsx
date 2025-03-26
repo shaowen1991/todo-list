@@ -20,6 +20,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/todo-lists/:listId"
+            element={
+              <ProtectedRoute>
+                <TodoLists />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/" element={<Navigate to="/todo-lists" replace />} />
         </Routes>
       </AuthProvider>
