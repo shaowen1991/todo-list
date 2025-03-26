@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useState, useMemo } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   ShareIcon,
@@ -12,10 +12,16 @@ import UserCard from '../components/UserCard';
 import Navbar from '../components/Navbar';
 import api from '../utils/api';
 import clsx from 'clsx';
-import { TASK_STATUS, PRIORITY } from '../constants/enums';
+import { TODO_STATUS, PRIORITY } from '../constants/enums';
 import { STYLE_CONFIGS } from '../constants/displays';
 
 export default function TodoLists() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = useMemo(
+    () => new URLSearchParams(location.search),
+    [location.search]
+  );
   const { listId } = useParams();
   const listIdParam = Number(listId);
   const { user } = useAuth();
@@ -23,8 +29,8 @@ export default function TodoLists() {
   const [todos, setTodos] = useState([]);
   const [usersWithAccess, setUsersWithAccess] = useState([]);
   const [accessRequests, setAccessRequests] = useState([]);
-  const [selectedStatuses, setSelectedStatuses] = useState([]);
-  const [selectedPriorities, setSelectedPriorities] = useState([]);
+  const selectedStatus = queryParams.get('status');
+  const selectedPriority = queryParams.get('priority');
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
 
@@ -51,7 +57,13 @@ export default function TodoLists() {
 
     const fetchTodosAndAccessRequests = async () => {
       try {
-        const todosData = await api.get(`/api/todo-lists/${listIdParam}/todos`);
+        const queryParamsString = queryParams.toString()
+          ? `?${queryParams.toString()}`
+          : '';
+        const todosData = await api.get(
+          `/api/todo-lists/${listIdParam}/todos${queryParamsString}`
+        );
+
         setTodos(todosData?.todos);
         setUsersWithAccess(
           todosData?.accessibleUsers?.reduce((acc, curr) => {
@@ -79,23 +91,55 @@ export default function TodoLists() {
     };
 
     fetchTodosAndAccessRequests();
-  }, [listIdParam, user?.id]);
+  }, [listIdParam, user?.id, queryParams]);
 
   // handlers
-  const toggleStatus = (status) => {
-    setSelectedStatuses((prev) =>
-      prev.includes(status)
-        ? prev.filter((s) => s !== status)
-        : [...prev, status]
-    );
+  const handleStatusSelect = (status) => {
+    const updatedQueryParams = new URLSearchParams(queryParams);
+
+    if (status) {
+      updatedQueryParams.set('status', status);
+    } else {
+      // if status is null set by show all button, remove it from the query params
+      updatedQueryParams.delete('status');
+    }
+
+    const queryParamsString = updatedQueryParams.toString()
+      ? `?${updatedQueryParams.toString()}`
+      : '';
+
+    navigate(`/todo-lists/${listIdParam}${queryParamsString}`, {
+      replace: true,
+    });
+
+    setShowStatusDropdown(false);
   };
 
-  const togglePriority = (priority) => {
-    setSelectedPriorities((prev) =>
-      prev.includes(priority)
-        ? prev.filter((p) => p !== priority)
-        : [...prev, priority]
-    );
+  const handlePrioritySelect = (priority) => {
+    const updatedQueryParams = new URLSearchParams(queryParams);
+
+    if (priority) {
+      updatedQueryParams.set('priority', priority);
+    } else {
+      // if status is null set by show all button, remove it from the query params
+      updatedQueryParams.delete('priority');
+    }
+
+    const queryParamsString = updatedQueryParams.toString()
+      ? `?${updatedQueryParams.toString()}`
+      : '';
+
+    navigate(`/todo-lists/${listIdParam}${queryParamsString}`, {
+      replace: true,
+    });
+
+    setShowPriorityDropdown(false);
+  };
+
+  const handleResetFilters = () => {
+    navigate(`/todo-lists/${listIdParam}`, { replace: true });
+    setShowPriorityDropdown(false);
+    setShowStatusDropdown(false);
   };
 
   const handleAddList = () => {
@@ -176,110 +220,124 @@ export default function TodoLists() {
     );
   };
 
+  const renderFilterDropdown = (type) => {
+    let optionKeys,
+      styleConfig,
+      label,
+      selectedOption,
+      showDropdown,
+      setShowDropdown,
+      handleSelectOption;
+
+    switch (type) {
+      case 'TODO_STATUS':
+        optionKeys = TODO_STATUS;
+        styleConfig = STYLE_CONFIGS.TODO_STATUS;
+        label = 'Status';
+        selectedOption = selectedStatus;
+        showDropdown = showStatusDropdown;
+        setShowDropdown = setShowStatusDropdown;
+        handleSelectOption = handleStatusSelect;
+        break;
+      case 'PRIORITY':
+        optionKeys = PRIORITY;
+        styleConfig = STYLE_CONFIGS.PRIORITY;
+        label = 'Priority';
+        selectedOption = selectedPriority;
+        showDropdown = showPriorityDropdown;
+        setShowDropdown = setShowPriorityDropdown;
+        handleSelectOption = handlePrioritySelect;
+        break;
+      default:
+        optionKeys = TODO_STATUS;
+        styleConfig = STYLE_CONFIGS.TODO_STATUS;
+        label = 'Status';
+        selectedOption = selectedStatus;
+        showDropdown = showStatusDropdown;
+        setShowDropdown = setShowStatusDropdown;
+        handleSelectOption = handleStatusSelect;
+    }
+
+    return (
+      <div className="relative">
+        <button
+          className={clsx(
+            'cursor-pointer rounded-md border border-gray-300 bg-white px-4 py-2',
+            'text-sm font-medium hover:bg-gray-50',
+            selectedOption
+              ? `${styleConfig[selectedOption].textColor} border-blue-500`
+              : 'text-gray-700'
+          )}
+          onClick={() => setShowDropdown(!showDropdown)}
+        >
+          {styleConfig[selectedOption]?.label || label}
+          <ChevronDownIcon className="-mr-1 ml-1 inline-block h-3 w-3" />
+        </button>
+
+        {showDropdown && (
+          <div
+            className={clsx(
+              'absolute left-0 z-10 mt-2 w-48',
+              'origin-top-left rounded-md',
+              'border border-gray-200 bg-white py-1 shadow-lg'
+            )}
+          >
+            <div className="px-3 py-2">
+              {Object.values(optionKeys).map((optionKey) => (
+                <button
+                  key={optionKey}
+                  className="mb-2 flex w-full cursor-pointer items-center rounded-md px-2 py-1 hover:bg-gray-100"
+                  onClick={() => handleSelectOption(optionKey)}
+                >
+                  <span
+                    className={clsx(
+                      'inline-flex rounded-md px-2.5 py-0.5 text-xs font-semibold',
+                      styleConfig[optionKey].bgColor,
+                      styleConfig[optionKey].textColor
+                    )}
+                  >
+                    {styleConfig[optionKey].label}
+                  </span>
+                </button>
+              ))}
+              <div className="mt-1 border-t border-gray-100 pt-2">
+                <button
+                  onClick={() => handleSelectOption(null)}
+                  className="flex w-full cursor-pointer items-center rounded-md px-2 py-1 hover:bg-gray-100"
+                >
+                  <span className="inline-flex rounded-md px-2.5 py-0.5 text-xs font-semibold text-gray-600">
+                    Show all
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderTodosGridSubheader = () => {
     return (
       <div className="flex items-center justify-between border-b border-gray-200 p-4">
         {/* status and priority dropdowns */}
-        <div className="flex space-x-2">
-          {!!todos.length && (
-            <>
-              <div className="relative">
-                <button
-                  className={clsx(
-                    'cursor-pointer rounded-md border border-gray-300 bg-white px-4 py-2',
-                    'text-sm font-medium text-gray-700 hover:bg-gray-50'
-                  )}
-                  onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                >
-                  Status
-                  <ChevronDownIcon className="-mr-1 ml-1 inline-block h-3 w-3" />
-                </button>
+        <div className="flex items-center space-x-2">
+          <>
+            {renderFilterDropdown('TODO_STATUS')}
+            {renderFilterDropdown('PRIORITY')}
 
-                {showStatusDropdown && (
-                  <div
-                    className={clsx(
-                      'absolute left-0 z-10 mt-2 w-48',
-                      'origin-top-left rounded-md',
-                      'border border-gray-200 bg-white py-1 shadow-lg'
-                    )}
-                  >
-                    <div className="px-3 py-2">
-                      {Object.values(TASK_STATUS).map((status) => (
-                        <label
-                          key={status}
-                          className="flex items-center space-x-2 py-1"
-                        >
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 rounded border-gray-300 text-blue-800 focus:ring-blue-500"
-                            checked={selectedStatuses.includes(status)}
-                            onChange={() => toggleStatus(status)}
-                          />
-                          <span
-                            className={clsx(
-                              'inline-flex rounded-md px-2.5 py-0.5 text-xs font-semibold',
-                              STYLE_CONFIGS.STATUS[status].bgColor,
-                              STYLE_CONFIGS.STATUS[status].textColor
-                            )}
-                          >
-                            {STYLE_CONFIGS.STATUS[status].label}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
+            {(selectedStatus || selectedPriority) && (
+              <button
+                onClick={handleResetFilters}
+                className={clsx(
+                  'ml-2 rounded-md border border-transparent px-4 py-2',
+                  'text-sm font-medium text-gray-900 hover:bg-gray-50'
                 )}
-              </div>
-
-              <div className="relative">
-                <button
-                  className={clsx(
-                    'cursor-pointer rounded-md border border-gray-300 bg-white px-4 py-2',
-                    'text-sm font-medium text-gray-700 hover:bg-gray-50'
-                  )}
-                  onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
-                >
-                  Priority
-                  <ChevronDownIcon className="-mr-1 ml-1 inline-block h-3 w-3" />
-                </button>
-
-                {showPriorityDropdown && (
-                  <div
-                    className={clsx(
-                      'absolute left-0 z-10 mt-2 w-48',
-                      'origin-top-left rounded-md',
-                      'border border-gray-200 bg-white py-1 shadow-lg'
-                    )}
-                  >
-                    <div className="px-3 py-2">
-                      {Object.values(PRIORITY).map((priority) => (
-                        <label
-                          key={priority}
-                          className="flex items-center space-x-2 py-1"
-                        >
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 rounded border-gray-300 text-blue-800 focus:ring-blue-500"
-                            checked={selectedPriorities.includes(priority)}
-                            onChange={() => togglePriority(priority)}
-                          />
-                          <span
-                            className={clsx(
-                              'inline-flex rounded-md px-2.5 py-0.5 text-xs font-semibold',
-                              STYLE_CONFIGS.PRIORITY[priority].bgColor,
-                              STYLE_CONFIGS.PRIORITY[priority].textColor
-                            )}
-                          >
-                            {STYLE_CONFIGS.PRIORITY[priority].label}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
+              >
+                Reset
+              </button>
+            )}
+          </>
         </div>
 
         {/* share and add todo buttons */}

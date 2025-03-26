@@ -3,16 +3,16 @@ import {
   OWNER_ROLE,
   PRIORITY,
   REQUEST_STATUS,
-  TASK_STATUS,
+  TODO_STATUS,
 } from './enums';
 
 // Display name mappings for enums
 export const DISPLAY_NAMES = Object.freeze({
-  TASK_STATUS: {
-    [TASK_STATUS.NOT_STARTED]: 'Not Started',
-    [TASK_STATUS.IN_PROGRESS]: 'In Progress',
-    [TASK_STATUS.COMPLETED]: 'Completed',
-    [TASK_STATUS.BLOCKED]: 'Blocked',
+  TODO_STATUS: {
+    [TODO_STATUS.NOT_STARTED]: 'Not Started',
+    [TODO_STATUS.IN_PROGRESS]: 'In Progress',
+    [TODO_STATUS.COMPLETED]: 'Completed',
+    [TODO_STATUS.BLOCKED]: 'Blocked',
   },
   PRIORITY: {
     [PRIORITY.P0]: 'P0',
@@ -33,26 +33,26 @@ export const DISPLAY_NAMES = Object.freeze({
 
 // UI styles for status and priority labels
 export const STYLE_CONFIGS = {
-  STATUS: {
-    [TASK_STATUS.NOT_STARTED]: {
+  TODO_STATUS: {
+    [TODO_STATUS.NOT_STARTED]: {
       bgColor: 'bg-gray-100',
       textColor: 'text-gray-800',
-      label: DISPLAY_NAMES.TASK_STATUS[TASK_STATUS.NOT_STARTED],
+      label: DISPLAY_NAMES.TODO_STATUS[TODO_STATUS.NOT_STARTED],
     },
-    [TASK_STATUS.IN_PROGRESS]: {
+    [TODO_STATUS.IN_PROGRESS]: {
       bgColor: 'bg-yellow-100',
       textColor: 'text-yellow-800',
-      label: DISPLAY_NAMES.TASK_STATUS[TASK_STATUS.IN_PROGRESS],
+      label: DISPLAY_NAMES.TODO_STATUS[TODO_STATUS.IN_PROGRESS],
     },
-    [TASK_STATUS.COMPLETED]: {
+    [TODO_STATUS.COMPLETED]: {
       bgColor: 'bg-green-100',
       textColor: 'text-green-800',
-      label: DISPLAY_NAMES.TASK_STATUS[TASK_STATUS.COMPLETED],
+      label: DISPLAY_NAMES.TODO_STATUS[TODO_STATUS.COMPLETED],
     },
-    [TASK_STATUS.BLOCKED]: {
+    [TODO_STATUS.BLOCKED]: {
       bgColor: 'bg-red-100',
       textColor: 'text-red-800',
-      label: DISPLAY_NAMES.TASK_STATUS[TASK_STATUS.BLOCKED],
+      label: DISPLAY_NAMES.TODO_STATUS[TODO_STATUS.BLOCKED],
     },
   },
   PRIORITY: {

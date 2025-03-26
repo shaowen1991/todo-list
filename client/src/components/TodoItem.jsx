@@ -29,11 +29,11 @@ export default function TodoItem({
         <span
           className={clsx(
             'inline-flex rounded-md px-2.5 py-0.5 text-xs font-semibold',
-            STYLE_CONFIGS.STATUS[todo.status]?.bgColor,
-            STYLE_CONFIGS.STATUS[todo.status]?.textColor
+            STYLE_CONFIGS.TODO_STATUS[todo.status]?.bgColor,
+            STYLE_CONFIGS.TODO_STATUS[todo.status]?.textColor
           )}
         >
-          {STYLE_CONFIGS.STATUS[todo.status]?.label}
+          {STYLE_CONFIGS.TODO_STATUS[todo.status]?.label}
         </span>
       </div>
       <div className="px-4 py-4 text-sm whitespace-nowrap text-gray-500">

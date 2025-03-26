@@ -2,7 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, test, expect, vi } from 'vitest';
 import TodoItem from '../../src/components/TodoItem';
 
-import { TASK_STATUS, PRIORITY } from '../../src/constants/enums';
+import { TODO_STATUS, PRIORITY } from '../../src/constants/enums';
 
 vi.mock('../../src/utils/dateUtils', () => ({
   formatDate: () => '2023-03-26',
@@ -14,7 +14,7 @@ describe('TodoItem Component', () => {
     title: 'Test Todo',
     description: 'This is a test todo item',
     due_date: '2023-03-30',
-    status: TASK_STATUS.IN_PROGRESS,
+    status: TODO_STATUS.IN_PROGRESS,
     priority: PRIORITY.P1,
     created_at: '2023-03-26',
   };

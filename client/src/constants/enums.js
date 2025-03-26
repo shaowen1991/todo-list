@@ -1,7 +1,7 @@
 /**
  * Enum values matching the PostgreSQL database schema
  */
-export const TASK_STATUS = Object.freeze({
+export const TODO_STATUS = Object.freeze({
   NOT_STARTED: 'NOT_STARTED',
   IN_PROGRESS: 'IN_PROGRESS',
   COMPLETED: 'COMPLETED',
@@ -32,5 +32,5 @@ export default Object.freeze({
   OWNER_ROLE,
   PRIORITY,
   REQUEST_STATUS,
-  TASK_STATUS,
+  TODO_STATUS,
 });
