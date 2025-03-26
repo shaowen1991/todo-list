@@ -5,6 +5,7 @@ import {
   ShareIcon,
   ChevronDownIcon,
   ChevronUpDownIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import ListCard from '../components/ListCard';
 import TodoItem from '../components/TodoItem';
@@ -41,6 +42,9 @@ export default function TodoLists() {
   const selectedSortBy = queryParams.get('sortBy');
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
+  const [showNewListEditor, setShowNewListEditor] = useState(false);
+  const [newListTitle, setNewListTitle] = useState('');
+  const [newListDescription, setNewListDescription] = useState('');
 
   // side effects and fetches
   useEffect(() => {
@@ -162,9 +166,26 @@ export default function TodoLists() {
     });
   };
 
-  const handleAddList = () => {
-    // logic to add a new list
-    console.log('Add new list');
+  const handleOpenNewListEditor = () => {
+    setShowNewListEditor(true);
+    setNewListTitle('');
+    setNewListDescription('');
+  };
+
+  const handleAddList = async () => {
+    try {
+      const newListData = await api.post('/api/todo-lists', {
+        title: newListTitle,
+        description: newListDescription,
+      });
+
+      setLists([{ ...newListData, owner_username: 'me' }, ...lists]);
+      setShowNewListEditor(false);
+      setNewListTitle('');
+      setNewListDescription('');
+    } catch (error) {
+      console.error('Error adding list:', error);
+    }
   };
 
   const handleAddTodo = () => {
@@ -197,19 +218,89 @@ export default function TodoLists() {
 
   // component renderers
   const renderNewListButton = () => {
+    const shouldBeDisabled =
+      showNewListEditor && (!newListTitle || !newListDescription);
+
     return (
       <button
-        onClick={handleAddList}
+        onClick={showNewListEditor ? handleAddList : handleOpenNewListEditor}
         className={clsx(
           'flex w-full cursor-pointer items-center justify-center',
-          'rounded-md border border-gray-300 bg-white p-3',
-          'text-sm font-bold text-gray-700 hover:bg-gray-50'
+          'rounded-md border border-gray-300 bg-white px-3 py-2',
+          'text-sm font-bold text-gray-700 hover:bg-gray-50',
+          showNewListEditor &&
+            '!border-0 !bg-blue-100 !text-blue-800 hover:!bg-blue-200',
+          shouldBeDisabled && 'cursor-not-allowed opacity-50'
         )}
+        disabled={shouldBeDisabled}
       >
         <span className="flex items-center">
-          <span className="mr-1">+</span> New List
+          {showNewListEditor ? (
+            'Create'
+          ) : (
+            <>
+              <span className="mr-1">+</span> New List
+            </>
+          )}
         </span>
       </button>
+    );
+  };
+
+  const renderNewListEditor = () => {
+    return (
+      <div className="relative bg-white">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-base font-medium text-gray-800">
+            Create New List
+          </h2>
+          <button
+            className="text-gray-500 hover:text-gray-700"
+            onClick={() => setShowNewListEditor(false)}
+          >
+            <XMarkIcon className="h-5 w-5" />
+          </button>
+        </div>
+
+        <form className="mb-4 space-y-4">
+          {/* title input */}
+          <div>
+            <label
+              htmlFor="list-title"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Title
+            </label>
+            <input
+              id="list-title"
+              type="text"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              placeholder=""
+              value={newListTitle}
+              onChange={(e) => setNewListTitle(e.target.value)}
+            />
+          </div>
+
+          {/* description text area */}
+          <div>
+            <label
+              htmlFor="list-description"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Description
+            </label>
+            <textarea
+              id="list-description"
+              rows={4}
+              className="mt-1 mb-6 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              placeholder=""
+              style={{ resize: 'none' }}
+              value={newListDescription}
+              onChange={(e) => setNewListDescription(e.target.value)}
+            />
+          </div>
+        </form>
+      </div>
     );
   };
 
@@ -220,7 +311,8 @@ export default function TodoLists() {
           <div className="flex flex-1 items-center justify-center p-4">
             <p className="text-2xl text-gray-300 select-none">No lists</p>
           </div>
-          <div className="absolute right-0 bottom-0 left-0 z-10 border-t border-gray-200 bg-white p-2">
+          <div className="absolute right-0 bottom-0 left-0 z-10 border-t border-gray-200 bg-white p-4">
+            {showNewListEditor && renderNewListEditor()}
             {renderNewListButton()}
           </div>
         </div>
@@ -234,7 +326,8 @@ export default function TodoLists() {
             <ListCard key={list.id} list={list} />
           ))}
         </div>
-        <div className="absolute right-0 bottom-0 left-0 z-10 border-t border-gray-200 bg-white p-2">
+        <div className="absolute right-0 bottom-0 left-0 z-10 border-t border-gray-200 bg-white p-4">
+          {showNewListEditor && renderNewListEditor()}
           {renderNewListButton()}
         </div>
       </div>
@@ -393,7 +486,7 @@ export default function TodoLists() {
       >
         <span className="flex items-center whitespace-nowrap">
           {text}
-          {sortType && <ChevronUpDownIcon className={clsx('ml-1 h-4 w-4')} />}
+          {sortType && <ChevronUpDownIcon className="ml-1 h-4 w-4" />}
         </span>
       </div>
     );
