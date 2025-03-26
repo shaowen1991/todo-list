@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useState, useMemo } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   ShareIcon,
@@ -12,10 +12,23 @@ import UserCard from '../components/UserCard';
 import Navbar from '../components/Navbar';
 import api from '../utils/api';
 import clsx from 'clsx';
-import { TASK_STATUS, PRIORITY } from '../constants/enums';
+import {
+  FILTER_PARAM_KEYS,
+  FILTER_TYPES,
+  PRIORITY,
+  SORT_BY_PARAMS,
+  SORT_BY_TYPES,
+  TODO_STATUS,
+} from '../constants/enums';
 import { STYLE_CONFIGS } from '../constants/displays';
 
 export default function TodoLists() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = useMemo(
+    () => new URLSearchParams(location.search),
+    [location.search]
+  );
   const { listId } = useParams();
   const listIdParam = Number(listId);
   const { user } = useAuth();
@@ -23,8 +36,9 @@ export default function TodoLists() {
   const [todos, setTodos] = useState([]);
   const [usersWithAccess, setUsersWithAccess] = useState([]);
   const [accessRequests, setAccessRequests] = useState([]);
-  const [selectedStatuses, setSelectedStatuses] = useState([]);
-  const [selectedPriorities, setSelectedPriorities] = useState([]);
+  const selectedStatus = queryParams.get(FILTER_PARAM_KEYS.TODO_STATUS);
+  const selectedPriority = queryParams.get(FILTER_PARAM_KEYS.PRIORITY);
+  const selectedSortBy = queryParams.get('sortBy');
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
 
@@ -51,12 +65,21 @@ export default function TodoLists() {
 
     const fetchTodosAndAccessRequests = async () => {
       try {
-        const todosData = await api.get(`/api/todo-lists/${listIdParam}/todos`);
+        const queryParamsString = queryParams.toString()
+          ? `?${queryParams.toString()}`
+          : '';
+        const todosData = await api.get(
+          `/api/todo-lists/${listIdParam}/todos${queryParamsString}`
+        );
+
         setTodos(todosData?.todos);
         setUsersWithAccess(
           todosData?.accessibleUsers?.reduce((acc, curr) => {
-            // exclude the user himself from the list of users with access
-            if (curr?.user_id !== user.id) acc.push(curr);
+            // set the owner to true if the user is the owner of the list
+            acc.push({
+              ...curr,
+              isOwner: curr?.user_id === todosData?.owner?.owner_id,
+            });
             return acc;
           }, [])
         );
@@ -76,23 +99,67 @@ export default function TodoLists() {
     };
 
     fetchTodosAndAccessRequests();
-  }, [listIdParam, user?.id]);
+  }, [listIdParam, user?.id, queryParams]);
 
   // handlers
-  const toggleStatus = (status) => {
-    setSelectedStatuses((prev) =>
-      prev.includes(status)
-        ? prev.filter((s) => s !== status)
-        : [...prev, status]
-    );
+  const handleSelectOption = (filterType, optionKey) => {
+    const updatedQueryParams = new URLSearchParams(queryParams);
+    let queryParamKey, setShowDropdown;
+
+    switch (filterType) {
+      case FILTER_TYPES.TODO_STATUS:
+        queryParamKey = FILTER_PARAM_KEYS.TODO_STATUS;
+        setShowDropdown = setShowStatusDropdown;
+        break;
+      case FILTER_TYPES.PRIORITY:
+        queryParamKey = FILTER_PARAM_KEYS.PRIORITY;
+        setShowDropdown = setShowPriorityDropdown;
+        break;
+      default:
+        break;
+    }
+
+    if (optionKey) {
+      updatedQueryParams.set(queryParamKey, optionKey);
+    } else {
+      // option key is null set by show all button, remove it from the query params
+      updatedQueryParams.delete(queryParamKey);
+    }
+
+    const queryParamsString = updatedQueryParams.toString()
+      ? `?${updatedQueryParams.toString()}`
+      : '';
+
+    navigate(`/todo-lists/${listIdParam}${queryParamsString}`, {
+      replace: true,
+    });
+
+    setShowDropdown(false);
   };
 
-  const togglePriority = (priority) => {
-    setSelectedPriorities((prev) =>
-      prev.includes(priority)
-        ? prev.filter((p) => p !== priority)
-        : [...prev, priority]
-    );
+  const handleResetFilters = () => {
+    navigate(`/todo-lists/${listIdParam}`, { replace: true });
+    setShowPriorityDropdown(false);
+    setShowStatusDropdown(false);
+  };
+
+  const handleSelectSort = (sortType) => {
+    const updatedQueryParams = new URLSearchParams(queryParams);
+    const queryParam = SORT_BY_PARAMS[sortType];
+
+    if (selectedSortBy !== queryParam) {
+      updatedQueryParams.set('sortBy', queryParam);
+    } else {
+      updatedQueryParams.delete('sortBy');
+    }
+
+    const queryParamsString = updatedQueryParams.toString()
+      ? `?${updatedQueryParams.toString()}`
+      : '';
+
+    navigate(`/todo-lists/${listIdParam}${queryParamsString}`, {
+      replace: true,
+    });
   };
 
   const handleAddList = () => {
@@ -123,7 +190,8 @@ export default function TodoLists() {
     console.log('Share list');
   };
 
-  const handleUserOptions = (id) => {
+  const handleUserWithAccessOptions = (id) => {
+    // TODO: handle user with access options
     console.log('User options', id);
   };
 
@@ -173,110 +241,115 @@ export default function TodoLists() {
     );
   };
 
+  const renderFilterDropdown = (filterType) => {
+    let optionKeys,
+      styleConfig,
+      label,
+      selectedOption,
+      showDropdown,
+      setShowDropdown;
+
+    switch (filterType) {
+      case FILTER_TYPES.TODO_STATUS:
+        optionKeys = TODO_STATUS;
+        styleConfig = STYLE_CONFIGS.TODO_STATUS;
+        label = 'Status';
+        selectedOption = selectedStatus;
+        showDropdown = showStatusDropdown;
+        setShowDropdown = setShowStatusDropdown;
+        break;
+      case FILTER_TYPES.PRIORITY:
+        optionKeys = PRIORITY;
+        styleConfig = STYLE_CONFIGS.PRIORITY;
+        label = 'Priority';
+        selectedOption = selectedPriority;
+        showDropdown = showPriorityDropdown;
+        setShowDropdown = setShowPriorityDropdown;
+        break;
+      default:
+        break;
+    }
+
+    return (
+      <div className="relative">
+        <button
+          className={clsx(
+            'cursor-pointer rounded-md border border-gray-300 bg-white px-4 py-2',
+            'text-sm font-medium hover:bg-gray-50',
+            selectedOption
+              ? `${styleConfig[selectedOption].textColor} border-blue-500`
+              : 'text-gray-700'
+          )}
+          onClick={() => setShowDropdown(!showDropdown)}
+        >
+          {styleConfig[selectedOption]?.label || label}
+          <ChevronDownIcon className="-mr-1 ml-1 inline-block h-3 w-3" />
+        </button>
+
+        {showDropdown && (
+          <div
+            className={clsx(
+              'absolute left-0 z-10 mt-2 w-48',
+              'origin-top-left rounded-md',
+              'border border-gray-200 bg-white py-1 shadow-lg'
+            )}
+          >
+            <div className="px-3 py-2">
+              {Object.values(optionKeys).map((optionKey) => (
+                <button
+                  key={optionKey}
+                  className="mb-2 flex w-full cursor-pointer items-center rounded-md px-2 py-1 hover:bg-gray-100"
+                  onClick={() => handleSelectOption(filterType, optionKey)}
+                >
+                  <span
+                    className={clsx(
+                      'inline-flex rounded-md px-2.5 py-0.5 text-xs font-semibold',
+                      styleConfig[optionKey].bgColor,
+                      styleConfig[optionKey].textColor
+                    )}
+                  >
+                    {styleConfig[optionKey].label}
+                  </span>
+                </button>
+              ))}
+              <div className="mt-1 border-t border-gray-100 pt-2">
+                <button
+                  onClick={() => handleSelectOption(filterType, null)}
+                  className="flex w-full cursor-pointer items-center rounded-md px-2 py-1 hover:bg-gray-100"
+                >
+                  <span className="inline-flex rounded-md px-2.5 py-0.5 text-xs font-semibold text-gray-600">
+                    Show all
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderTodosGridSubheader = () => {
     return (
       <div className="flex items-center justify-between border-b border-gray-200 p-4">
         {/* status and priority dropdowns */}
-        <div className="flex space-x-2">
-          {!!todos.length && (
-            <>
-              <div className="relative">
-                <button
-                  className={clsx(
-                    'cursor-pointer rounded-md border border-gray-300 bg-white px-4 py-2',
-                    'text-sm font-medium text-gray-700 hover:bg-gray-50'
-                  )}
-                  onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                >
-                  Status
-                  <ChevronDownIcon className="-mr-1 ml-1 inline-block h-3 w-3" />
-                </button>
+        <div className="flex items-center space-x-2">
+          <>
+            {renderFilterDropdown('TODO_STATUS')}
+            {renderFilterDropdown('PRIORITY')}
 
-                {showStatusDropdown && (
-                  <div
-                    className={clsx(
-                      'absolute left-0 z-10 mt-2 w-48',
-                      'origin-top-left rounded-md',
-                      'border border-gray-200 bg-white py-1 shadow-lg'
-                    )}
-                  >
-                    <div className="px-3 py-2">
-                      {Object.values(TASK_STATUS).map((status) => (
-                        <label
-                          key={status}
-                          className="flex items-center space-x-2 py-1"
-                        >
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 rounded border-gray-300 text-blue-800 focus:ring-blue-500"
-                            checked={selectedStatuses.includes(status)}
-                            onChange={() => toggleStatus(status)}
-                          />
-                          <span
-                            className={clsx(
-                              'inline-flex rounded-md px-2.5 py-0.5 text-xs font-semibold',
-                              STYLE_CONFIGS.STATUS[status].bgColor,
-                              STYLE_CONFIGS.STATUS[status].textColor
-                            )}
-                          >
-                            {STYLE_CONFIGS.STATUS[status].label}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
+            {(selectedStatus || selectedPriority) && (
+              <button
+                onClick={handleResetFilters}
+                className={clsx(
+                  'ml-2 rounded-md border border-transparent px-4 py-2',
+                  'text-sm font-medium text-gray-900 hover:bg-gray-50'
                 )}
-              </div>
-
-              <div className="relative">
-                <button
-                  className={clsx(
-                    'cursor-pointer rounded-md border border-gray-300 bg-white px-4 py-2',
-                    'text-sm font-medium text-gray-700 hover:bg-gray-50'
-                  )}
-                  onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
-                >
-                  Priority
-                  <ChevronDownIcon className="-mr-1 ml-1 inline-block h-3 w-3" />
-                </button>
-
-                {showPriorityDropdown && (
-                  <div
-                    className={clsx(
-                      'absolute left-0 z-10 mt-2 w-48',
-                      'origin-top-left rounded-md',
-                      'border border-gray-200 bg-white py-1 shadow-lg'
-                    )}
-                  >
-                    <div className="px-3 py-2">
-                      {Object.values(PRIORITY).map((priority) => (
-                        <label
-                          key={priority}
-                          className="flex items-center space-x-2 py-1"
-                        >
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 rounded border-gray-300 text-blue-800 focus:ring-blue-500"
-                            checked={selectedPriorities.includes(priority)}
-                            onChange={() => togglePriority(priority)}
-                          />
-                          <span
-                            className={clsx(
-                              'inline-flex rounded-md px-2.5 py-0.5 text-xs font-semibold',
-                              STYLE_CONFIGS.PRIORITY[priority].bgColor,
-                              STYLE_CONFIGS.PRIORITY[priority].textColor
-                            )}
-                          >
-                            {STYLE_CONFIGS.PRIORITY[priority].label}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
+              >
+                Reset
+              </button>
+            )}
+          </>
         </div>
 
         {/* share and add todo buttons */}
@@ -295,7 +368,7 @@ export default function TodoLists() {
             onClick={handleAddTodo}
             className={clsx(
               'ml-4 inline-flex cursor-pointer items-center rounded-md',
-              'border-0 bg-blue-100 px-6 py-2 text-sm font-bold',
+              'box-border border-0 bg-blue-100 px-6 py-2 text-sm font-bold',
               'text-blue-800 hover:bg-blue-200'
             )}
           >
@@ -306,12 +379,21 @@ export default function TodoLists() {
     );
   };
 
-  const renderGridHeaderCell = (text = '', options = { canSort: false }) => {
+  const renderGridHeaderCell = (text = '', sortType) => {
     return (
-      <div className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+      <div
+        className={clsx(
+          'px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase select-none',
+          sortType && 'cursor-pointer hover:text-gray-700',
+          SORT_BY_PARAMS[sortType] === selectedSortBy && '!text-blue-800'
+        )}
+        onClick={() => {
+          if (sortType) handleSelectSort(sortType);
+        }}
+      >
         <span className="flex items-center whitespace-nowrap">
           {text}
-          {options.canSort && <ChevronUpDownIcon className="ml-1 h-4 w-4" />}
+          {sortType && <ChevronUpDownIcon className={clsx('ml-1 h-4 w-4')} />}
         </span>
       </div>
     );
@@ -326,7 +408,7 @@ export default function TodoLists() {
       );
     }
 
-    const gridTemplateColumns = '15% 35% 10% 10% 10% 10% 10%';
+    const gridTemplateColumns = '15% 35% 12% 10% 10% 10% 8%';
 
     return (
       <div className="overflow-x-auto">
@@ -339,12 +421,12 @@ export default function TodoLists() {
             )}
             style={{ gridTemplateColumns }}
           >
-            {renderGridHeaderCell('Title', { canSort: true })}
+            {renderGridHeaderCell('Title', SORT_BY_TYPES.TITLE)}
             {renderGridHeaderCell('Description')}
-            {renderGridHeaderCell('Due Date', { canSort: true })}
-            {renderGridHeaderCell('Status', { canSort: true })}
-            {renderGridHeaderCell('Priority', { canSort: true })}
-            {renderGridHeaderCell('Created At')}
+            {renderGridHeaderCell('Due Date', SORT_BY_TYPES.DUE_DATE)}
+            {renderGridHeaderCell('Status', SORT_BY_TYPES.TODO_STATUS)}
+            {renderGridHeaderCell('Priority', SORT_BY_TYPES.PRIORITY)}
+            {renderGridHeaderCell('Created At', SORT_BY_TYPES.CREATED_AT)}
             {renderGridHeaderCell('')}
           </div>
 
@@ -424,7 +506,7 @@ export default function TodoLists() {
                 <UserCard
                   key={user.user_id}
                   user={user}
-                  onOptions={handleUserOptions}
+                  onOptions={handleUserWithAccessOptions}
                 />
               ))}
             </div>
