@@ -1,8 +1,9 @@
 import {
-  TASK_STATUS,
-  PRIORITY,
   ACCESS_PERMISSION,
+  OWNER_ROLE,
+  PRIORITY,
   REQUEST_STATUS,
+  TASK_STATUS,
 } from './enums';
 
 // Display name mappings for enums
@@ -20,6 +21,7 @@ export const DISPLAY_NAMES = Object.freeze({
     [PRIORITY.P3]: 'P3',
   },
   ACCESS_PERMISSION: {
+    [OWNER_ROLE]: 'Owner', // special case for owner, not a real enum in database
     [ACCESS_PERMISSION.EDIT]: 'Editor',
     [ACCESS_PERMISSION.VIEW]: 'Viewer',
   },

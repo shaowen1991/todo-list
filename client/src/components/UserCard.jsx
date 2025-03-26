@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { CheckIcon, EllipsisHorizontalIcon } from '@heroicons/react/24/outline';
 import { DISPLAY_NAMES } from '../constants/displays';
+import { OWNER_ROLE } from '../constants/enums';
 import clsx from 'clsx';
 
 export default function UserCard({
@@ -34,7 +35,11 @@ export default function UserCard({
         <div className="mr-2 text-xs text-blue-800">
           {
             DISPLAY_NAMES.ACCESS_PERMISSION[
-              isRequest ? user.requested_permission : user.permission
+              isRequest
+                ? user.requested_permission
+                : user.isOwner
+                  ? OWNER_ROLE // special case for owner, not a real enum in database
+                  : user.permission
             ]
           }
         </div>
@@ -72,6 +77,7 @@ UserCard.propTypes = {
     username: PropTypes.string.isRequired,
     permission: PropTypes.string,
     requested_permission: PropTypes.string,
+    isOwner: PropTypes.bool,
   }).isRequired,
   isRequest: PropTypes.bool,
   onAccept: PropTypes.func,

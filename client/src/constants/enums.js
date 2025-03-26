@@ -20,14 +20,17 @@ export const ACCESS_PERMISSION = Object.freeze({
   VIEW: 'VIEW',
 });
 
+export const OWNER_ROLE = 'OWNER'; // special case for owner, not a real enum in database
+
 export const REQUEST_STATUS = Object.freeze({
   PENDING: 'PENDING',
   ACCEPTED: 'ACCEPTED',
 });
 
 export default Object.freeze({
-  TASK_STATUS,
-  PRIORITY,
   ACCESS_PERMISSION,
+  OWNER_ROLE,
+  PRIORITY,
   REQUEST_STATUS,
+  TASK_STATUS,
 });

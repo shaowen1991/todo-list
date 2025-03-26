@@ -55,8 +55,11 @@ export default function TodoLists() {
         setTodos(todosData?.todos);
         setUsersWithAccess(
           todosData?.accessibleUsers?.reduce((acc, curr) => {
-            // exclude the user himself from the list of users with access
-            if (curr?.user_id !== user.id) acc.push(curr);
+            // set the owner to true if the user is the owner of the list
+            acc.push({
+              ...curr,
+              isOwner: curr?.user_id === todosData?.owner?.owner_id,
+            });
             return acc;
           }, [])
         );
@@ -295,7 +298,7 @@ export default function TodoLists() {
             onClick={handleAddTodo}
             className={clsx(
               'ml-4 inline-flex cursor-pointer items-center rounded-md',
-              'border-0 bg-blue-100 px-6 py-2 text-sm font-bold',
+              'box-border border-0 bg-blue-100 px-6 py-2 text-sm font-bold',
               'text-blue-800 hover:bg-blue-200'
             )}
           >
