@@ -63,7 +63,7 @@ describe('UserCard Component', () => {
     const acceptButton = screen.getByTitle('Accept');
     fireEvent.click(acceptButton);
 
-    expect(mockOnAccept).toHaveBeenCalledWith(1);
+    expect(mockOnAccept).toHaveBeenCalledWith(1, ACCESS_PERMISSION.EDIT);
   });
 
   test('handles missing optional props', () => {

@@ -55,7 +55,7 @@ export default function TodoItem({
         {showActions && (
           <div className="flex space-x-4">
             <button
-              onClick={onEdit}
+              onClick={() => onEdit(todo.id)}
               className="flex cursor-pointer items-center text-gray-500 hover:text-blue-800"
               title="Edit"
             >
