@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import TodoLists from './pages/TodoLists';
+import RequestAccess from './pages/RequestAccess';
 
 function App() {
   return (
@@ -25,6 +26,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <TodoLists />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/todo-lists/:listId/request-access"
+            element={
+              <ProtectedRoute>
+                <RequestAccess />
               </ProtectedRoute>
             }
           />

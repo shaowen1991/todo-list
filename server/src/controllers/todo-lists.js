@@ -80,6 +80,56 @@ const getLists = async (req, res) => {
 };
 
 /**
+ * Get a specific todo list by ID
+ * GET /api/todo-lists/:listId
+ */
+const getList = async (req, res) => {
+  try {
+    const { listId } = req.params;
+
+    const listQuery = `
+      SELECT tl.*, u.username as owner_username
+      FROM todo_lists tl
+      JOIN users u ON tl.owner_id = u.id
+      WHERE tl.id = $1
+    `;
+
+    const accessQuery = `
+      SELECT u.id as user_id, u.username, tla.permission
+      FROM todo_list_access tla
+      JOIN users u ON tla.user_id = u.id
+      WHERE tla.list_id = $1
+    `;
+
+    const [listResult, accessResult] = await Promise.all([
+      db.query(listQuery, [listId]),
+      db.query(accessQuery, [listId]),
+    ]);
+
+    if (listResult.rowCount === 0) {
+      return res
+        .status(HttpStatus.NOT_FOUND)
+        .json({ error: 'Todo list not found' });
+    }
+
+    const list = listResult.rows[0];
+    const accessibleUsers = accessResult.rows;
+
+    const result = {
+      ...list,
+      accessibleUsers: accessibleUsers || [],
+    };
+
+    res.json(result);
+  } catch (err) {
+    console.error('Error:', err);
+    res
+      .status(HttpStatus.INTERNAL_SERVER_ERROR)
+      .json({ error: 'Server error' });
+  }
+};
+
+/**
  * Get todos from a specific list with optional filtering and sorting
  * GET /api/todo-lists/:listId/todos
  */
@@ -627,6 +677,7 @@ const getListAccessRequests = async (req, res) => {
 
 export {
   getLists,
+  getList,
   getListTodos,
   getListTodo,
   createList,
