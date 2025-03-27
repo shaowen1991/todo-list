@@ -78,6 +78,7 @@ todo-list/
 **Note: All routes require authentication via the authRequired middleware.**
 
 ## Database Schema
+![db schema](https://github.com/user-attachments/assets/1ce39ee4-0c26-4762-be8f-b21cb0daf8c5)
 
 ## Docker Setup
 
