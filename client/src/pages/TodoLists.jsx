@@ -1,5 +1,6 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import io from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
 import {
   ShareIcon,
@@ -32,6 +33,7 @@ const oneWeekLater = () => {
 };
 
 export default function TodoLists() {
+  const socketRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
   const queryParams = useMemo(
@@ -83,6 +85,40 @@ export default function TodoLists() {
     setEditorTodoStatus(TODO_STATUS.NOT_STARTED);
     setEditorTodoPriority(PRIORITY.P1);
   }, []);
+
+  // socket io connection on mount and listIdParam changes
+  useEffect(() => {
+    socketRef.current = io(import.meta.env.VITE_API_URL);
+
+    socketRef.current.on('connect', () => {
+      // join the current list room if listIdParam exists
+      if (listIdParam) {
+        socketRef.current.emit('joinList', listIdParam);
+      }
+    });
+
+    socketRef.current.on('todoCreated', (newTodo) => {
+      setTodos((prevTodos) => [newTodo, ...prevTodos]);
+    });
+
+    socketRef.current.on('todoUpdated', (updatedTodo) => {
+      setTodos((prevTodos) =>
+        prevTodos.map((todo) =>
+          todo.id === updatedTodo.id ? updatedTodo : todo
+        )
+      );
+    });
+
+    return () => {
+      if (socketRef.current) {
+        // join the current list room if listIdParam exists
+        if (listIdParam) {
+          socketRef.current.emit('leaveList', listIdParam);
+        }
+        socketRef.current.disconnect();
+      }
+    };
+  }, [listIdParam]);
 
   // side effects and fetches
   useEffect(() => {
@@ -225,9 +261,9 @@ export default function TodoLists() {
         description: newListDescription,
       });
 
-      setLists([
+      setLists((prevLists) => [
         { ...newListData, owner_username: `${user.username} (me)` },
-        ...lists,
+        ...prevLists,
       ]);
       setShowNewListEditor(false);
       resetNewListEditor();
@@ -272,12 +308,18 @@ export default function TodoLists() {
 
       if (isNewTodoEditorMode) {
         // add the new todo to the top of the list
-        setTodos([newTodoData, ...todos]);
+        setTodos((prevTodos) => [newTodoData, ...prevTodos]);
+        // emit socket event for todo creation
+        socketRef.current.emit('todoCreated', newTodoData);
       } else {
         // update the todo in the list
-        setTodos(
-          todos.map((todo) => (todo.id === editorTodoId ? newTodoData : todo))
+        setTodos((prevTodos) =>
+          prevTodos.map((prevTodo) =>
+            prevTodo.id === editorTodoId ? newTodoData : prevTodo
+          )
         );
+        // emit socket event for todo update
+        socketRef.current.emit('todoUpdated', newTodoData);
       }
 
       setShowTodoEditor(false);
@@ -287,9 +329,8 @@ export default function TodoLists() {
     }
   };
 
-  const handleDeleteTodo = (todoId) => {
+  const handleDeleteTodo = () => {
     // TODO: handle delete todo, need server side implementation
-    console.log('Delete todo', todoId);
   };
 
   const handleAcceptRequest = async (userId, requestedPermission) => {
@@ -305,18 +346,18 @@ export default function TodoLists() {
       const acceptedRequestUser = accessRequests.find(
         (accessRequest) => accessRequest.user_id === userId
       );
-      setAccessRequests(
-        accessRequests.filter(
+      setAccessRequests((prevAccessRequests) =>
+        prevAccessRequests.filter(
           (accessRequest) => accessRequest.user_id !== userId
         )
       );
-      setUsersWithAccess([
+      setUsersWithAccess((prevUsersWithAccess) => [
         {
           permission: requestedPermission,
           user_id: acceptedRequestUser.user_id,
           username: acceptedRequestUser.username,
         },
-        ...usersWithAccess,
+        ...prevUsersWithAccess,
       ]);
     } catch (error) {
       console.error('Error accepting request:', error);
@@ -339,9 +380,8 @@ export default function TodoLists() {
       });
   };
 
-  const handleUserWithAccessOptions = (id) => {
+  const handleUserWithAccessOptions = () => {
     // TODO: handle user with access options
-    console.log('User options', id);
   };
 
   // component renderers
