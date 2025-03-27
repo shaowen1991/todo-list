@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -14,6 +14,7 @@ import Navbar from '../components/Navbar';
 import api from '../utils/api';
 import clsx from 'clsx';
 import {
+  ACCESS_PERMISSION,
   FILTER_PARAM_KEYS,
   FILTER_TYPES,
   PRIORITY,
@@ -22,6 +23,12 @@ import {
   TODO_STATUS,
 } from '../constants/enums';
 import { STYLE_CONFIGS } from '../constants/displays';
+
+const oneWeekLater = () => {
+  const date = new Date();
+  date.setDate(date.getDate() + 7);
+  return date.toISOString().split('T')[0];
+};
 
 export default function TodoLists() {
   const navigate = useNavigate();
@@ -43,8 +50,37 @@ export default function TodoLists() {
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
   const [showNewListEditor, setShowNewListEditor] = useState(false);
+  const [showTodoEditor, setShowTodoEditor] = useState(false);
   const [newListTitle, setNewListTitle] = useState('');
   const [newListDescription, setNewListDescription] = useState('');
+  const [editorTodoId, setEditorTodoId] = useState('');
+  const [editorTodoTitle, setEditorTodoTitle] = useState('');
+  const [editorTodoDescription, setEditorTodoDescription] = useState('');
+  const [editorTodoDueDate, setEditorTodoDueDate] = useState(oneWeekLater);
+  const [editorTodoStatus, setEditorTodoStatus] = useState(
+    TODO_STATUS.NOT_STARTED
+  );
+  const [editorTodoPriority, setEditorTodoPriority] = useState(PRIORITY.P1);
+  const [isNewTodoEditorMode, setIsNewTodoEditorMode] = useState(false);
+  const isUserHasEditPermission = usersWithAccess?.some(
+    (userWithAccess) =>
+      userWithAccess.user_id === user?.id &&
+      userWithAccess.permission === ACCESS_PERMISSION.EDIT
+  );
+
+  const resetNewListEditor = () => {
+    setNewListTitle('');
+    setNewListDescription('');
+  };
+
+  const resetTodoEditor = useCallback(() => {
+    setEditorTodoId('');
+    setEditorTodoTitle('');
+    setEditorTodoDescription('');
+    setEditorTodoDueDate(oneWeekLater);
+    setEditorTodoStatus(TODO_STATUS.NOT_STARTED);
+    setEditorTodoPriority(PRIORITY.P1);
+  }, []);
 
   // side effects and fetches
   useEffect(() => {
@@ -53,7 +89,7 @@ export default function TodoLists() {
         const listsData = await api.get('/api/todo-lists');
         // display the owner's username as 'me' in lists that the user owns
         listsData.forEach((list) => {
-          if (list?.owner_id === user?.id) list.owner_username = 'me';
+          if (list?.owner_id === user?.id) list.owner_username += ' (me)';
         });
         setLists(listsData);
       } catch (error) {
@@ -96,6 +132,9 @@ export default function TodoLists() {
         } else {
           setAccessRequests([]);
         }
+
+        setShowTodoEditor(false);
+        resetTodoEditor();
       } catch (error) {
         // TODO: handle No permission to access this list, redirect to /request-access route
         console.error('Error fetching todos and access requests:', error);
@@ -103,7 +142,7 @@ export default function TodoLists() {
     };
 
     fetchTodosAndAccessRequests();
-  }, [listIdParam, user?.id, queryParams]);
+  }, [listIdParam, user?.id, queryParams, resetTodoEditor]);
 
   // handlers
   const handleSelectOption = (filterType, optionKey) => {
@@ -168,8 +207,7 @@ export default function TodoLists() {
 
   const handleOpenNewListEditor = () => {
     setShowNewListEditor(true);
-    setNewListTitle('');
-    setNewListDescription('');
+    resetNewListEditor();
   };
 
   const handleAddList = async () => {
@@ -179,28 +217,71 @@ export default function TodoLists() {
         description: newListDescription,
       });
 
-      setLists([{ ...newListData, owner_username: 'me' }, ...lists]);
+      setLists([
+        { ...newListData, owner_username: `${user.username} (me)` },
+        ...lists,
+      ]);
       setShowNewListEditor(false);
-      setNewListTitle('');
-      setNewListDescription('');
+      resetNewListEditor();
+      navigate(`/todo-lists/${newListData.id}`);
     } catch (error) {
       console.error('Error adding list:', error);
     }
   };
 
-  const handleAddTodo = () => {
-    // logic to add a new todo
-    console.log('Add new todo');
+  const handleOpenTodoEditor = (todo, { isNewTodoEditorMode = false }) => {
+    setIsNewTodoEditorMode(isNewTodoEditorMode);
+    setShowTodoEditor(true);
+
+    if (isNewTodoEditorMode) {
+      resetTodoEditor();
+    } else {
+      // populate the todo data for edit mode
+      setEditorTodoId(todo.id);
+      setEditorTodoTitle(todo.title);
+      setEditorTodoDescription(todo.description);
+      setEditorTodoDueDate(todo.due_date?.split('T')[0]);
+      setEditorTodoStatus(todo.status);
+      setEditorTodoPriority(todo.priority);
+    }
   };
 
-  const handleEditTodo = (id) => {
-    // logic to edit a todo
-    console.log('Edit todo', id);
+  const handleAddTodo = async () => {
+    const apiMethod = isNewTodoEditorMode ? 'post' : 'put';
+    const todoIdParam = isNewTodoEditorMode ? '' : editorTodoId;
+
+    try {
+      const newTodoData = await api[apiMethod](
+        `/api/todo-lists/${listIdParam}/todos/${todoIdParam}`,
+        {
+          title: editorTodoTitle,
+          description: editorTodoDescription,
+          dueDate: editorTodoDueDate,
+          status: editorTodoStatus,
+          priority: editorTodoPriority,
+        }
+      );
+
+      if (isNewTodoEditorMode) {
+        // add the new todo to the top of the list
+        setTodos([newTodoData, ...todos]);
+      } else {
+        // update the todo in the list
+        setTodos(
+          todos.map((todo) => (todo.id === editorTodoId ? newTodoData : todo))
+        );
+      }
+
+      setShowTodoEditor(false);
+      resetTodoEditor();
+    } catch (error) {
+      console.error('Error adding todo:', error);
+    }
   };
 
-  const handleDeleteTodo = (id) => {
-    // logic to delete a todo
-    console.log('Delete todo', id);
+  const handleDeleteTodo = (todoId) => {
+    // TODO: handle delete todo, need server side implementation
+    console.log('Delete todo', todoId);
   };
 
   const handleAcceptRequest = (id) => {
@@ -457,16 +538,20 @@ export default function TodoLists() {
           >
             <ShareIcon className="h-5 w-5" />
           </button>
-          <button
-            onClick={handleAddTodo}
-            className={clsx(
-              'ml-4 inline-flex cursor-pointer items-center rounded-md',
-              'box-border border-0 bg-blue-100 px-6 py-2 text-sm font-bold',
-              'text-blue-800 hover:bg-blue-200'
-            )}
-          >
-            <span className="mr-1">+</span> New
-          </button>
+          {isUserHasEditPermission && (
+            <button
+              onClick={() =>
+                handleOpenTodoEditor(null, { isNewTodoEditorMode: true })
+              }
+              className={clsx(
+                'ml-4 inline-flex cursor-pointer items-center rounded-md',
+                'box-border border-0 bg-blue-100 px-6 py-2 text-sm font-bold',
+                'text-blue-800 hover:bg-blue-200'
+              )}
+            >
+              <span className="mr-1">+</span> New
+            </button>
+          )}
         </div>
       </div>
     );
@@ -476,7 +561,7 @@ export default function TodoLists() {
     return (
       <div
         className={clsx(
-          'px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase select-none',
+          'px-4 py-3 text-left text-sm font-medium tracking-wider text-gray-500 select-none',
           sortType && 'cursor-pointer hover:text-gray-700',
           SORT_BY_PARAMS[sortType] === selectedSortBy && '!text-blue-800'
         )}
@@ -501,7 +586,7 @@ export default function TodoLists() {
       );
     }
 
-    const gridTemplateColumns = '15% 35% 12% 10% 10% 10% 8%';
+    const gridTemplateColumns = '15% 35% 10% 10% 10% 12% 8%';
 
     return (
       <div className="overflow-x-auto">
@@ -529,7 +614,10 @@ export default function TodoLists() {
               <TodoItem
                 key={todo.id}
                 todo={todo}
-                onEdit={handleEditTodo}
+                showActions={isUserHasEditPermission}
+                onEdit={() =>
+                  handleOpenTodoEditor(todo, { isNewTodoEditorMode: false })
+                }
                 onDelete={handleDeleteTodo}
                 gridTemplateColumns={gridTemplateColumns}
               />
@@ -540,20 +628,172 @@ export default function TodoLists() {
     );
   };
 
+  const renderTodoEditor = () => {
+    return (
+      <div className="relative border-t border-gray-200 bg-white p-4">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-base font-medium text-gray-800">
+            {isNewTodoEditorMode ? 'Create New Todo' : 'Edit Todo'}
+          </h2>
+          <button
+            className="text-gray-500 hover:text-gray-700"
+            onClick={() => setShowTodoEditor(false)}
+          >
+            <XMarkIcon className="h-5 w-5" />
+          </button>
+        </div>
+
+        <form className="space-y-4">
+          <div className="flex space-x-4">
+            <div className="flex w-3/4 flex-col">
+              {/* title */}
+              <div className="mb-4">
+                <label
+                  htmlFor="todo-title"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Title
+                </label>
+                <input
+                  id="todo-title"
+                  type="text"
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  value={editorTodoTitle}
+                  onChange={(e) => setEditorTodoTitle(e.target.value)}
+                />
+              </div>
+
+              {/* description */}
+              <div className="flex flex-grow flex-col">
+                <label
+                  htmlFor="todo-description"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Description
+                </label>
+                <textarea
+                  id="todo-description"
+                  rows={4}
+                  className="mt-1 block w-full flex-grow rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  style={{ resize: 'none' }}
+                  value={editorTodoDescription}
+                  onChange={(e) => setEditorTodoDescription(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="flex w-1/4 flex-col">
+              {/* due date */}
+              <div className="mb-4">
+                <label
+                  htmlFor="todo-due-date"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Due Date
+                </label>
+                <input
+                  id="todo-due-date"
+                  type="date"
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  value={editorTodoDueDate}
+                  onChange={(e) => setEditorTodoDueDate(e.target.value)}
+                />
+              </div>
+
+              {/* status dropdown */}
+              <div className="mb-4">
+                <label
+                  htmlFor="todo-status"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Status
+                </label>
+                <select
+                  id="todo-status"
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 pr-8 text-sm"
+                  value={editorTodoStatus}
+                  onChange={(e) => setEditorTodoStatus(e.target.value)}
+                >
+                  {Object.values(TODO_STATUS).map((status) => (
+                    <option key={status} value={status}>
+                      {STYLE_CONFIGS.TODO_STATUS[status]?.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* priority dropdown */}
+              <div className="mt-auto">
+                <label
+                  htmlFor="todo-priority"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Priority
+                </label>
+                <select
+                  id="todo-priority"
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 pr-8 text-sm"
+                  value={editorTodoPriority}
+                  onChange={(e) => setEditorTodoPriority(e.target.value)}
+                >
+                  {Object.values(PRIORITY).map((priority) => (
+                    <option key={priority} value={priority}>
+                      {STYLE_CONFIGS.PRIORITY[priority]?.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 flex justify-end">
+            <div className="w-1/4">
+              <button
+                type="button"
+                className={clsx(
+                  'ml-1 w-full rounded-md bg-blue-100 px-4 py-2 text-sm font-medium text-blue-800 hover:bg-blue-200',
+                  !editorTodoTitle && 'cursor-not-allowed opacity-50'
+                )}
+                onClick={handleAddTodo}
+                disabled={!editorTodoTitle}
+              >
+                {isNewTodoEditorMode ? 'Create' : 'Update'}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    );
+  };
+
   const renderTodos = () => {
     if (!listIdParam)
       return (
-        <div className="flex h-full w-full items-center justify-center p-4">
-          <p className="text-2xl text-gray-300 select-none">
-            Select or create a todo list first
-          </p>
+        <div className="relative flex h-full flex-col">
+          <div className="flex flex-1 items-center justify-center p-4">
+            <p className="text-2xl text-gray-300 select-none">
+              Select or create a todo list first
+            </p>
+          </div>
+          {showTodoEditor && (
+            <div className="absolute right-0 bottom-0 left-0 z-10">
+              {renderTodoEditor()}
+            </div>
+          )}
         </div>
       );
 
     return (
-      <div className="flex h-full flex-col">
-        <div className="flex-shrink-0">{renderTodosGridSubheader()}</div>
-        <div className="flex-1 overflow-auto">{renderTodosGrid()}</div>
+      <div className="relative flex h-full flex-col">
+        <div className="absolute inset-0 flex flex-col overflow-hidden">
+          <div className="flex-shrink-0">{renderTodosGridSubheader()}</div>
+          <div className="flex-1 overflow-auto">{renderTodosGrid()}</div>
+        </div>
+        {showTodoEditor && (
+          <div className="absolute right-0 bottom-0 left-0 z-10">
+            {renderTodoEditor()}
+          </div>
+        )}
       </div>
     );
   };

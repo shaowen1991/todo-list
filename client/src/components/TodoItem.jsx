@@ -7,6 +7,7 @@ import { formatDate } from '../utils/dateUtils';
 
 export default function TodoItem({
   todo,
+  showActions,
   onEdit,
   onDelete,
   gridTemplateColumns,
@@ -20,7 +21,7 @@ export default function TodoItem({
         {todo.title}
       </div>
       <div className="truncate px-4 py-4 text-sm text-gray-500">
-        {todo.description}
+        {todo.description || '—'}
       </div>
       <div className="px-4 py-4 text-sm whitespace-nowrap text-gray-500">
         {formatDate(todo.due_date)}
@@ -51,22 +52,25 @@ export default function TodoItem({
         {formatDate(todo.created_at)}
       </div>
       <div className="px-4 py-4 text-sm font-medium whitespace-nowrap">
-        <div className="flex space-x-4">
-          <button
-            onClick={() => onEdit(todo.id)}
-            className="flex cursor-pointer items-center text-gray-500 hover:text-blue-800"
-            title="Edit"
-          >
-            <PencilIcon className="h-5 w-5" />
-          </button>
-          <button
-            onClick={() => onDelete(todo.id)}
-            className="flex cursor-pointer items-center text-gray-500 hover:text-red-600"
-            title="Delete"
-          >
-            <TrashIcon className="h-5 w-5" />
-          </button>
-        </div>
+        {showActions && (
+          <div className="flex space-x-4">
+            <button
+              onClick={onEdit}
+              className="flex cursor-pointer items-center text-gray-500 hover:text-blue-800"
+              title="Edit"
+            >
+              <PencilIcon className="h-5 w-5" />
+            </button>
+
+            <button
+              onClick={() => onDelete(todo.id)}
+              className="flex cursor-pointer items-center text-gray-500 hover:text-red-600"
+              title="Delete"
+            >
+              <TrashIcon className="h-5 w-5" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -82,6 +86,7 @@ TodoItem.propTypes = {
     priority: PropTypes.string.isRequired,
     created_at: PropTypes.string.isRequired,
   }).isRequired,
+  showActions: PropTypes.bool.isRequired,
   onEdit: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   gridTemplateColumns: PropTypes.string.isRequired,
