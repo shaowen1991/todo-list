@@ -18,6 +18,7 @@ import {
   FILTER_PARAM_KEYS,
   FILTER_TYPES,
   PRIORITY,
+  REQUEST_STATUS,
   SORT_BY_PARAMS,
   SORT_BY_TYPES,
   TODO_STATUS,
@@ -126,7 +127,7 @@ export default function TodoLists() {
 
         if (todosData?.owner?.owner_id === user?.id) {
           const requestsData = await api.get(
-            `/api/todo-lists/${listIdParam}/access/requests`
+            `/api/todo-lists/${listIdParam}/access/requests?status=${REQUEST_STATUS.PENDING}`
           );
           setAccessRequests(requestsData);
         } else {
@@ -145,7 +146,7 @@ export default function TodoLists() {
   }, [listIdParam, user?.id, queryParams, resetTodoEditor]);
 
   // handlers
-  const handleSelectOption = (filterType, optionKey) => {
+  const handleSelectFilter = (filterType, optionKey) => {
     const updatedQueryParams = new URLSearchParams(queryParams);
     let queryParamKey, setShowDropdown;
 
@@ -246,7 +247,7 @@ export default function TodoLists() {
     }
   };
 
-  const handleAddTodo = async () => {
+  const handleSubmitTodoEditor = async () => {
     const apiMethod = isNewTodoEditorMode ? 'post' : 'put';
     const todoIdParam = isNewTodoEditorMode ? '' : editorTodoId;
 
@@ -284,8 +285,35 @@ export default function TodoLists() {
     console.log('Delete todo', todoId);
   };
 
-  const handleAcceptRequest = (id) => {
-    console.log('Accept request', id);
+  const handleAcceptRequest = async (userId, requestedPermission) => {
+    try {
+      await api.put(
+        `/api/todo-lists/${listIdParam}/access/requests/${userId}`,
+        {
+          status: REQUEST_STATUS.ACCEPTED,
+        }
+      );
+
+      // update requests and users with access states without refetching the data
+      const acceptedRequestUser = accessRequests.find(
+        (accessRequest) => accessRequest.user_id === userId
+      );
+      setAccessRequests(
+        accessRequests.filter(
+          (accessRequest) => accessRequest.user_id !== userId
+        )
+      );
+      setUsersWithAccess([
+        {
+          permission: requestedPermission,
+          user_id: acceptedRequestUser.user_id,
+          username: acceptedRequestUser.username,
+        },
+        ...usersWithAccess,
+      ]);
+    } catch (error) {
+      console.error('Error accepting request:', error);
+    }
   };
 
   const handleShareList = () => {
@@ -473,7 +501,7 @@ export default function TodoLists() {
                 <button
                   key={optionKey}
                   className="mb-2 flex w-full cursor-pointer items-center rounded-md px-2 py-1 hover:bg-gray-100"
-                  onClick={() => handleSelectOption(filterType, optionKey)}
+                  onClick={() => handleSelectFilter(filterType, optionKey)}
                 >
                   <span
                     className={clsx(
@@ -488,7 +516,7 @@ export default function TodoLists() {
               ))}
               <div className="mt-1 border-t border-gray-100 pt-2">
                 <button
-                  onClick={() => handleSelectOption(filterType, null)}
+                  onClick={() => handleSelectFilter(filterType, null)}
                   className="flex w-full cursor-pointer items-center rounded-md px-2 py-1 hover:bg-gray-100"
                 >
                   <span className="inline-flex rounded-md px-2.5 py-0.5 text-xs font-semibold text-gray-600">
@@ -754,7 +782,7 @@ export default function TodoLists() {
                   'ml-1 w-full rounded-md bg-blue-100 px-4 py-2 text-sm font-medium text-blue-800 hover:bg-blue-200',
                   !editorTodoTitle && 'cursor-not-allowed opacity-50'
                 )}
-                onClick={handleAddTodo}
+                onClick={handleSubmitTodoEditor}
                 disabled={!editorTodoTitle}
               >
                 {isNewTodoEditorMode ? 'Create' : 'Update'}

@@ -45,7 +45,7 @@ export default function UserCard({
         </div>
         {isRequest ? (
           <button
-            onClick={() => onAccept(user.user_id)}
+            onClick={() => onAccept(user.user_id, user.requested_permission)}
             className={clsx(
               'cursor-pointer rounded-full p-1',
               'text-gray-700 hover:bg-green-100 hover:text-green-800'
