@@ -2,6 +2,7 @@ import express from 'express';
 import authRequired from '../middleware/authRequired.js';
 import {
   getLists,
+  getList,
   getListTodos,
   getListTodo,
   createList,
@@ -19,6 +20,7 @@ router.use(authRequired);
 
 // lists routes
 router.get('/', getLists);
+router.get('/:listId', getList);
 router.post('/', createList);
 
 // list-specific routes

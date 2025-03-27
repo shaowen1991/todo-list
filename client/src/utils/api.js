@@ -23,6 +23,7 @@ const apiFetch = async (endpoint, options = {}) => {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
+    error.status = response.status;
     throw error;
   }
 

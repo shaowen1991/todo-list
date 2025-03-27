@@ -52,6 +52,7 @@ export default function TodoLists() {
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
   const [showNewListEditor, setShowNewListEditor] = useState(false);
   const [showTodoEditor, setShowTodoEditor] = useState(false);
+  const [showShareTooltip, setShowShareTooltip] = useState(false);
   const [newListTitle, setNewListTitle] = useState('');
   const [newListDescription, setNewListDescription] = useState('');
   const [editorTodoId, setEditorTodoId] = useState('');
@@ -109,9 +110,15 @@ export default function TodoLists() {
         const queryParamsString = queryParams.toString()
           ? `?${queryParams.toString()}`
           : '';
-        const todosData = await api.get(
-          `/api/todo-lists/${listIdParam}/todos${queryParamsString}`
-        );
+        const todosData = await api
+          .get(`/api/todo-lists/${listIdParam}/todos${queryParamsString}`)
+          .catch((error) => {
+            // if the user does not have access to the list, redirect to the request access page
+            if (error.status === 403) {
+              navigate(`/todo-lists/${listIdParam}/request-access`);
+            }
+            throw error;
+          });
 
         setTodos(todosData?.todos);
         setUsersWithAccess(
@@ -143,7 +150,7 @@ export default function TodoLists() {
     };
 
     fetchTodosAndAccessRequests();
-  }, [listIdParam, user?.id, queryParams, resetTodoEditor]);
+  }, [listIdParam, user?.id, queryParams, resetTodoEditor, navigate]);
 
   // handlers
   const handleSelectFilter = (filterType, optionKey) => {
@@ -317,7 +324,19 @@ export default function TodoLists() {
   };
 
   const handleShareList = () => {
-    console.log('Share list');
+    const shareUrl = `${window.location.origin}/todo-lists/${listIdParam}/request-access`;
+
+    navigator.clipboard
+      .writeText(shareUrl)
+      .then(() => {
+        setShowShareTooltip(true);
+        setTimeout(() => {
+          setShowShareTooltip(false);
+        }, 2000);
+      })
+      .catch((err) => {
+        console.error('Failed to copy link: ', err);
+      });
   };
 
   const handleUserWithAccessOptions = (id) => {
@@ -556,16 +575,21 @@ export default function TodoLists() {
 
         {/* share and add todo buttons */}
         <div className="flex items-center">
-          <button
-            onClick={handleShareList}
-            className={clsx(
-              'cursor-pointer rounded-full p-1',
-              'text-gray-500 hover:text-blue-800'
+          <div className="flex items-center">
+            {showShareTooltip && (
+              <span className="mr-2 text-sm text-green-800">Link copied!</span>
             )}
-            title="Share"
-          >
-            <ShareIcon className="h-5 w-5" />
-          </button>
+            <button
+              onClick={handleShareList}
+              className={clsx(
+                'cursor-pointer rounded-full p-1',
+                'text-gray-500 hover:text-blue-800'
+              )}
+              title="Share"
+            >
+              <ShareIcon className="h-5 w-5" />
+            </button>
+          </div>
           {isUserHasEditPermission && (
             <button
               onClick={() =>
