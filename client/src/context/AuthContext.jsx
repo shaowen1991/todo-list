@@ -3,6 +3,7 @@ import {
   useState,
   useEffect,
   useContext,
+  useMemo,
   useCallback,
 } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -15,6 +16,11 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
+  const queryParams = useMemo(
+    () => new URLSearchParams(location.search),
+    [location.search]
+  );
+  const sessionRedirectUrl = queryParams.get('sessionRedirect');
 
   const checkAuth = useCallback(async () => {
     if (user) {
@@ -36,14 +42,17 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     checkAuth().then((isAuthed) => {
       // only redirect to /todo-lists if user is authenticated
-      // and currently on the root path or auth pages
-      const isAuthPage =
-        location.pathname === '/login' ||
-        location.pathname === '/signup' ||
-        location.pathname === '/';
+      // and currently on the auth pages
+      const shouldRedirect =
+        isAuthed &&
+        (location.pathname === '/login' || location.pathname === '/signup');
 
-      if (isAuthed && isAuthPage) {
-        navigate('/todo-lists', { replace: true });
+      if (shouldRedirect) {
+        if (sessionRedirectUrl) {
+          navigate(sessionRedirectUrl);
+        } else {
+          navigate('/todo-lists', { replace: true });
+        }
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
