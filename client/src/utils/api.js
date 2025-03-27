@@ -1,4 +1,11 @@
-const API_URL = import.meta.env.VITE_API_URL;
+// Get the base API URL dynamically
+export const getApiBaseUrl = () => {
+  const isProduction = import.meta.env.MODE === 'production';
+  const protocol =
+    window.location.protocol === 'https:' ? 'https://' : 'http://';
+  const port = isProduction ? '' : ':4000'; // server port defined in /server/src/index.js
+  return `${protocol}${window.location.hostname}${port}`;
+};
 
 /**
  * Base fetch function with default configs
@@ -8,7 +15,7 @@ const API_URL = import.meta.env.VITE_API_URL;
  * @returns {Promise}
  */
 const apiFetch = async (endpoint, options = {}) => {
-  const url = `${API_URL}${endpoint}`;
+  const url = `${getApiBaseUrl()}${endpoint}`;
 
   const fetchOptions = {
     credentials: 'include',

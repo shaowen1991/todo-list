@@ -12,7 +12,7 @@ import ListCard from '../components/ListCard';
 import TodoItem from '../components/TodoItem';
 import UserCard from '../components/UserCard';
 import Navbar from '../components/Navbar';
-import api from '../utils/api';
+import api, { getApiBaseUrl } from '../utils/api';
 import clsx from 'clsx';
 import {
   ACCESS_PERMISSION,
@@ -88,7 +88,7 @@ export default function TodoLists() {
 
   // socket io connection on mount and listIdParam changes
   useEffect(() => {
-    socketRef.current = io(import.meta.env.VITE_API_URL);
+    socketRef.current = io(getApiBaseUrl());
 
     socketRef.current.on('connect', () => {
       // join the current list room if listIdParam exists
@@ -398,7 +398,7 @@ export default function TodoLists() {
           'text-sm font-bold text-gray-700 hover:bg-gray-50',
           showNewListEditor &&
             '!border-0 !bg-blue-100 !text-blue-800 hover:!bg-blue-200',
-          shouldBeDisabled && 'cursor-not-allowed opacity-50'
+          shouldBeDisabled && '!cursor-not-allowed opacity-50'
         )}
         disabled={shouldBeDisabled}
       >
@@ -423,7 +423,7 @@ export default function TodoLists() {
             Create New List
           </h2>
           <button
-            className="text-gray-500 hover:text-gray-700"
+            className="cursor-pointer text-gray-500 hover:text-gray-700"
             onClick={() => setShowNewListEditor(false)}
           >
             <XMarkIcon className="h-5 w-5" />
@@ -603,7 +603,7 @@ export default function TodoLists() {
               <button
                 onClick={handleResetFilters}
                 className={clsx(
-                  'ml-2 rounded-md border border-transparent px-4 py-2',
+                  'ml-2 cursor-pointer rounded-md border border-transparent px-4 py-2',
                   'text-sm font-medium text-gray-900 hover:bg-gray-50'
                 )}
               >
@@ -728,7 +728,7 @@ export default function TodoLists() {
             {isNewTodoEditorMode ? 'Create New Todo' : 'Edit Todo'}
           </h2>
           <button
-            className="text-gray-500 hover:text-gray-700"
+            className="cursor-pointer text-gray-500 hover:text-gray-700"
             onClick={() => setShowTodoEditor(false)}
           >
             <XMarkIcon className="h-5 w-5" />

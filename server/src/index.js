@@ -45,7 +45,7 @@ io.on('connection', (socket) => {
   });
 });
 
-const PORT = process.env.PORT;
-server.listen(PORT, () => console.log(`Server running on ${PORT}`));
+const port = 4000;
+server.listen(port, () => console.log(`Server running on ${port}`));
 
 export default server;
