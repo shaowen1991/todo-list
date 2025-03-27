@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import clsx from 'clsx';
 
 export default function Signup() {
+  const location = useLocation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -24,6 +25,12 @@ export default function Signup() {
     } catch {
       setError('Username already exists or signup failed');
     }
+  };
+
+  // preserve search params when navigating to login
+  const loginLink = {
+    pathname: '/login',
+    search: location.search,
   };
 
   return (
@@ -121,7 +128,7 @@ export default function Signup() {
           <p className="text-gray-700">
             Already have an account?{' '}
             <Link
-              to="/login"
+              to={loginLink}
               className="font-medium text-blue-800 hover:text-blue-600"
             >
               Log in

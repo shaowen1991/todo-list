@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import clsx from 'clsx';
 
 export default function Login() {
+  const location = useLocation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -18,6 +19,12 @@ export default function Login() {
     } catch {
       setError('Invalid username or password');
     }
+  };
+
+  // preserve search params when navigating to signup
+  const signupLink = {
+    pathname: '/signup',
+    search: location.search,
   };
 
   return (
@@ -94,7 +101,7 @@ export default function Login() {
           <p className="text-gray-700">
             Don't have an account?{' '}
             <Link
-              to="/signup"
+              to={signupLink}
               className="font-medium text-blue-800 hover:text-blue-600"
             >
               Sign up
