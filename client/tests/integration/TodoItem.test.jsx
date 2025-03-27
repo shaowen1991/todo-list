@@ -30,6 +30,7 @@ describe('TodoItem Component', () => {
         onEdit={mockOnEdit}
         onDelete={mockOnDelete}
         gridTemplateColumns={mockGridTemplateColumns}
+        showActions={true}
       />
     );
   };

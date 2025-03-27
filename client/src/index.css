@@ -3,3 +3,9 @@
 body {
   margin: 0;
 }
+
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
