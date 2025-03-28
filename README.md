@@ -17,6 +17,35 @@ Basic Infra Setup & Tech Choices: https://github.com/shaowen1991/todo-list/issue
 - CI Pipeline with GitHub Actions
 - Containerized and orchestrated with Docker and Ngnix
 
+## Architecture
+![todolist drawio (1)](https://github.com/user-attachments/assets/557d79e4-9113-4f75-b99e-df192e4a03e0)
+
+## API endpoints
+
+#### List Management
+
+- `GET /api/todo-lists/` - Retrieve all todo lists accessible to the user (owned or shared)
+- `GET /api/todo-lists/:listId` - Retrieve a todo list by ID
+- `POST /api/todo-lists/` - Create a new todo list
+
+#### Todo Management
+
+- `GET /api/todo-lists/:listId/todos` - Get all todos from a specific list
+- `POST /api/todo-lists/:listId/todos` - Create a new todo in a specific list
+- `GET /api/todo-lists/:listId/todos/:todoId` - Retrieve a specific todo
+- `PUT /api/todo-lists/:listId/todos/:todoId` - Update a specific todo
+
+#### Access Control
+
+- `GET /api/todo-lists/:listId/access/requests` - Get all access requests for a todo list
+- `POST /api/todo-lists/:listId/access/requests` - Create a new access request for a list
+- `PUT /api/todo-lists/:listId/access/requests/:userId` - Accept an access request from a specific user
+
+**Note: All routes require authentication via the authRequired middleware.**
+
+## Database Schema
+![db schema](https://github.com/user-attachments/assets/1ce39ee4-0c26-4762-be8f-b21cb0daf8c5)
+
 ## File Structure
 
 ```
@@ -51,34 +80,6 @@ todo-list/
 ├── README.docker.md          # Docker setup instructions
 └── .github/workflows/        # CI YAML
 ```
-
-## Architecture
-
-## API endpoints
-
-#### List Management
-
-- `GET /api/todo-lists/` - Retrieve all todo lists accessible to the user (owned or shared)
-- `GET /api/todo-lists/:listId` - Retrieve a todo list by ID
-- `POST /api/todo-lists/` - Create a new todo list
-
-#### Todo Management
-
-- `GET /api/todo-lists/:listId/todos` - Get all todos from a specific list
-- `POST /api/todo-lists/:listId/todos` - Create a new todo in a specific list
-- `GET /api/todo-lists/:listId/todos/:todoId` - Retrieve a specific todo
-- `PUT /api/todo-lists/:listId/todos/:todoId` - Update a specific todo
-
-#### Access Control
-
-- `GET /api/todo-lists/:listId/access/requests` - Get all access requests for a todo list
-- `POST /api/todo-lists/:listId/access/requests` - Create a new access request for a list
-- `PUT /api/todo-lists/:listId/access/requests/:userId` - Accept an access request from a specific user
-
-**Note: All routes require authentication via the authRequired middleware.**
-
-## Database Schema
-![db schema](https://github.com/user-attachments/assets/1ce39ee4-0c26-4762-be8f-b21cb0daf8c5)
 
 ## Docker Setup
 
@@ -235,3 +236,21 @@ Server Tests
 cd server
 npm test
 ```
+
+## Unimplemented Features
+
+- Tagging  
+- Batch actions  
+- Implementing partial API responses via GraphQL/fields  
+- Internationalization (i18n)  
+- Tracking  
+- Dark mode  
+- Deleting/Editing todo lists  
+- Deleting/Viewing todo items  
+- Database query optimization with transactions and schema  
+- Continuous Delivery (CD) with Kubernetes  
+- Allow owners to directly search for usernames to grant access  
+- Modifying already granted permissions  
+- Filtering multiple statuses and priorities with checkboxes  
+- Toast notifications for success and error network messages  
+- Loading state for all network calls
