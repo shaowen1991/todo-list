@@ -180,7 +180,6 @@ export default function TodoLists() {
         setShowTodoEditor(false);
         resetTodoEditor();
       } catch (error) {
-        // TODO: handle No permission to access this list, redirect to /request-access route
         console.error('Error fetching todos and access requests:', error);
       }
     };
